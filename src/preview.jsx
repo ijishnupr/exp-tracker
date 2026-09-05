@@ -162,6 +162,14 @@ function Harness() {
 // A MemoryRouter avoids needing the dev server to serve this secondary HTML
 // entry at nested paths; ?page= picks the starting route (append &add=1 to open
 // the entry sheet).
+// ?theme=light|dark pins the mode, so both can be screenshotted on a machine
+// whose OS setting is fixed. Without it the harness follows the OS, as the app
+// does. The attribute is set directly rather than through applyTheme, so a
+// screenshot run does not leave a stored preference behind for the real app.
+const theme = new URLSearchParams(location.search).get('theme')
+if (theme === 'light' || theme === 'dark') {
+  document.documentElement.setAttribute('data-theme', theme)
+}
 applyThemeColor()
 watchSystemTheme()
 

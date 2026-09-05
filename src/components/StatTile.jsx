@@ -24,7 +24,10 @@ export default function StatTile({
         : 'var(--text-primary)'
 
   return (
-    <div className="card p-4">
+    /* `min-w-0` keeps a long figure from widening the grid column it sits in
+       — a grid item's automatic minimum is its min-content width, and the
+       figure below is deliberately `whitespace-nowrap`. */
+    <div className="card min-w-0 p-4">
       <div className="text-xs font-medium uppercase tracking-wide text-muted">{label}</div>
       {/* Three tiles on a narrow phone leave little room, so the figure scales
           with the viewport and never wraps mid-number. */}
@@ -36,8 +39,11 @@ export default function StatTile({
         {signed && amount !== 0 ? (amount > 0 ? '+' : '−') : ''}
         {formatMoney(signed ? Math.abs(amount) : amount, currency, { compact })}
       </div>
+      {/* The delta row wraps rather than running past the card edge: a big
+          swing ("4696%") is exactly when it gets long, and nowrap made the
+          tile overflow its column on a narrow phone. */}
       {change != null && (
-        <div className="mt-1 flex items-center gap-1 whitespace-nowrap text-xs">
+        <div className="mt-1 flex flex-wrap items-center gap-x-1 text-xs">
           <span aria-hidden="true" style={{ color: 'var(--text-secondary)' }}>
             {up ? '▲' : '▼'}
           </span>

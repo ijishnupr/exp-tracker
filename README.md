@@ -171,14 +171,21 @@ summary is shown for confirmation.
 
 Chart colour and form follow a validated system rather than taste:
 
-- Spend-by-category is a **horizontal bar chart**, not a pie — lengths are
-  comparable where angles are not, and long category names fit. It is
-  **single-hue**: one measure, so repainting each bar would encode nothing.
+- Spending and income each get their own **category bar list** — a bar under
+  each row's name and amount, largest first, not a pie: lengths are comparable
+  where angles are not. Two cards rather than one card with a type toggle, so
+  both can be read at once instead of one hiding behind a click; they sit side
+  by side from the `sm` breakpoint up. Each list is **single-hue** (the hue its
+  type wears in the trend chart) because one measure per chart means repainting
+  each bar would encode nothing. Every amount and share is printed on its row,
+  so the list is its own table view and nothing is gated behind a hover a phone
+  does not have.
 - The trend chart is **income vs expense grouped bars** once any income exists,
   with a legend always present and only the selected month direct-labelled. The
   two hues validate all-pairs in both modes (normal-vision ΔE 24.0 light / 20.9
   dark); tritan separation is the weak axis, which is exactly why the legend and
-  labels are not optional.
+  labels are not optional. Totals for the whole window sit under it as a stat
+  row: two or three numbers side by side are a stat row, not a second chart.
 - Category identity lives in the chip beside each name, never in a chart series.
   Colour slots repeat past eight categories, which is safe precisely because
   charts are single-hue and every chip sits next to its label.
@@ -187,7 +194,12 @@ Chart colour and form follow a validated system rather than taste:
 - The eight category colours are a fixed, validated order (worst adjacent
   colour-vision ΔE 9.1 light / 8.4 dark). Eight is the ceiling — a ninth would
   need a generated hue that is indistinguishable under CVD, which is why
-  `CATEGORIES` is a closed list and the chart folds its tail into "Other".
+  `CATEGORIES` is a closed list and the charts stay single-hue.
+
+Long category names are the case that breaks a layout like this: a grid item's
+automatic minimum size is its min-content width, so a nowrap label will stretch
+its column until the amounts slide off the screen. The breakdown cards and stat
+tiles carry `min-w-0` for exactly that reason, and the label truncates.
 
 Dark mode is a selected palette stepped for the dark surface, not an automatic
 inversion. It follows the OS by default and can be overridden in Settings.
@@ -213,6 +225,7 @@ can be checked without a live project:
 ```bash
 npm run dev
 # http://localhost:5173/preview.html
+# &theme=light|dark pins the mode so both can be checked on one machine
 #   ?page=/transactions|/budgets|/settings|/login
 #   &add=1               (open the add-entry sheet)
 #   &theme=light|dark

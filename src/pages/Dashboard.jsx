@@ -12,15 +12,11 @@ import {
 import { formatMoney, sum } from '../lib/money'
 import StatTile from '../components/StatTile'
 import MonthlyTrendChart from '../components/MonthlyTrendChart'
-import CategoryBarChart from '../components/CategoryBarChart'
+import CategoryBreakdown from '../components/CategoryBreakdown'
 import MonthPicker from '../components/MonthPicker'
 import EntryList from '../components/EntryList'
 import EntrySheet from '../components/EntrySheet'
 import AddButton from '../components/AddButton'
-
-/** Beyond this many categories the chart folds its tail into one "Other" row
- *  rather than stacking up rows nobody can compare. */
-const CHART_CATEGORY_CAP = 7
 
 export default function Dashboard() {
   const { selectedMonth, setSelectedMonth, entries, budgets, categories, currency, loading } =
@@ -39,13 +35,19 @@ export default function Dashboard() {
     () => monthlyTotals(entries, selectedMonth, WINDOW_MONTHS),
     [entries, selectedMonth],
   )
+  // Totals for the whole subscribed window, so the trend chart carries its own
+  // bottom line rather than leaving the reader to add six bars by eye.
+  const windowTotal = useMemo(() => totals(entries), [entries])
   const hasIncome = useMemo(() => entries.some((e) => e.type === 'income'), [entries])
 
-  const cats = useMemo(
+  const spendCats = useMemo(
     () => categoryTotals(monthEntries, categories, 'expense'),
     [monthEntries, categories],
   )
-  const chartCats = useMemo(() => foldTail(cats, CHART_CATEGORY_CAP), [cats])
+  const incomeCats = useMemo(
+    () => categoryTotals(monthEntries, categories, 'income'),
+    [monthEntries, categories],
+  )
 
   const rows = useMemo(
     () => budgetRows(monthEntries, budgets, categories),
@@ -54,6 +56,17 @@ export default function Dashboard() {
   const alerts = useMemo(() => budgetAlerts(rows), [rows])
   const budgetTotal = sum(rows.map((r) => r.limit))
   const recent = monthEntries.slice(0, 5)
+
+  // Compact figures: three exact amounts side by side overflow a narrow phone
+  // once the numbers get long, and the shape of the total is what this row is
+  // for — the exact figures for the month in view are in the tiles above.
+  const windowRows = hasIncome
+    ? [
+        ['Income', windowTotal.income],
+        ['Spent', windowTotal.expense],
+        ['Net', windowTotal.net],
+      ]
+    : [['Spent', windowTotal.expense]]
 
   return (
     <div className="space-y-4 p-4 pb-20">
@@ -147,34 +160,58 @@ export default function Dashboard() {
         </h2>
         <p className="mb-2 text-xs text-muted">Last {WINDOW_MONTHS} months</p>
         <MonthlyTrendChart data={trend} currency={currency} showIncome={hasIncome} />
+        {/* The running totals behind the bars. Two or three numbers side by
+            side are a stat row, not a second chart — the bars already carry
+            the shape, so repeating them as a pair of columns would say
+            nothing new. */}
+        <div className="mt-3 border-t border-grid pt-3">
+          {/* The window is named once, above the columns. Repeating it in each
+              label overflowed the narrowest phones. */}
+          <p className="text-[11px] text-muted">Totals across these {WINDOW_MONTHS} months</p>
+          <dl className="mt-1 flex items-baseline gap-4">
+            {windowRows.map(([label, value]) => (
+              <div key={label} className="min-w-0 flex-1">
+                <dt className="truncate text-[11px] text-muted">{label}</dt>
+                <dd
+                  className="mt-0.5 truncate text-sm font-semibold text-ink"
+                  title={formatMoney(value, currency)}
+                >
+                  {formatMoney(value, currency, { compact: true })}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </section>
 
-      <section className="card p-4">
-        <h2 className="text-sm font-semibold text-ink">Spending by category</h2>
-        <p className="mb-3 text-xs text-muted">
-          {cats.length ? 'Largest first' : 'Nothing recorded yet'}
-        </p>
-        {cats.length > 0 && <CategoryBarChart data={chartCats} currency={currency} />}
-        {cats.length > 0 && (
-          <ul className="mt-3 space-y-1 border-t border-grid pt-3 text-xs">
-            {cats.map((c) => (
-              <li key={c.key} className="flex items-center justify-between gap-2">
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <span
-                    aria-hidden="true"
-                    className="h-2 w-2 shrink-0 rounded-sm"
-                    style={{ background: c.color }}
-                  />
-                  <span className="truncate text-ink-2">{c.label}</span>
-                </span>
-                <span className="shrink-0 tabular text-muted">
-                  {formatMoney(c.total, currency)} · {c.share.toFixed(0)}%
-                </span>
-              </li>
-            ))}
-          </ul>
+      {/* Side by side once there is room: spending and income are read against
+          each other, and stacking them on a wide screen buries the second one
+          below the fold for no reason. `items-start` keeps each card its own
+          height rather than stretching the shorter one. */}
+      <div className="grid items-start gap-4 sm:grid-cols-2">
+        <CategoryBreakdown
+          title="Spending by category"
+          rows={spendCats}
+          total={t.expense}
+          currency={currency}
+          color="var(--series-expense)"
+          shareNote="of spending"
+          emptyText="Nothing recorded yet"
+        />
+
+        {/* Only when there is income this month — an empty card would be a row
+            of chrome around no data. */}
+        {incomeCats.length > 0 && (
+          <CategoryBreakdown
+            title="Income by category"
+            rows={incomeCats}
+            total={t.income}
+            currency={currency}
+            color="var(--series-income)"
+            shareNote="of income"
+          />
         )}
-      </section>
+      </div>
 
       <section className="card overflow-hidden">
         <div className="flex items-center justify-between p-4 pb-0">
@@ -193,25 +230,6 @@ export default function Dashboard() {
       <EntrySheet entry={editing} onClose={() => setEditing(null)} />
     </div>
   )
-}
-
-/** Keeps the top `cap` categories and sums the rest into a single grey "Other"
- *  row, so the chart never needs a ninth colour. */
-function foldTail(rows, cap) {
-  if (rows.length <= cap) return rows
-  const head = rows.slice(0, cap)
-  const tail = rows.slice(cap)
-  return [
-    ...head,
-    {
-      key: '__other',
-      label: `Other (${tail.length})`,
-      icon: '📦',
-      color: 'var(--baseline)',
-      total: sum(tail.map((t) => t.total)),
-      share: tail.reduce((acc, r) => acc + r.share, 0),
-    },
-  ]
 }
 
 /** Days of the month elapsed — the full month once it is in the past, so a
