@@ -45,18 +45,24 @@
   --delta-good: #006300;
 }
 
+/* Dark mode is true black: the page is #000 so an OLED panel actually switches
+   those pixels off, and cards sit a hair above it so they still read as
+   surfaces instead of dissolving into the background — helped by a slightly
+   stronger hairline. The categorical palette was re-validated against the new
+   card surface; every slot still clears 3:1, with more headroom than it had
+   against the old charcoal. */
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme='light'])) {
     color-scheme: dark;
-    --surface-1: #1a1a19;
-    --plane: #0d0d0d;
+    --surface-1: #0c0c0c;
+    --plane: #000000;
     --text-primary: #ffffff;
     --text-secondary: #c3c2b7;
     --text-muted: #898781;
-    --gridline: #2c2c2a;
-    --baseline: #383835;
-    --border: rgba(255, 255, 255, 0.1);
-    --wash: rgba(255, 255, 255, 0.06);
+    --gridline: #232323;
+    --baseline: #333333;
+    --border: rgba(255, 255, 255, 0.13);
+    --wash: rgba(255, 255, 255, 0.07);
 
     --series-1: #3987e5;
     --series-expense: #3987e5;
@@ -77,15 +83,15 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --surface-1: #1a1a19;
-  --plane: #0d0d0d;
+  --surface-1: #0c0c0c;
+  --plane: #000000;
   --text-primary: #ffffff;
   --text-secondary: #c3c2b7;
   --text-muted: #898781;
-  --gridline: #2c2c2a;
-  --baseline: #383835;
-  --border: rgba(255, 255, 255, 0.1);
-  --wash: rgba(255, 255, 255, 0.06);
+  --gridline: #232323;
+  --baseline: #333333;
+  --border: rgba(255, 255, 255, 0.13);
+  --wash: rgba(255, 255, 255, 0.07);
 
   --series-1: #3987e5;
   --series-expense: #3987e5;

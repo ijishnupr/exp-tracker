@@ -20,7 +20,7 @@ const indexOfPath = (pathname) => {
 }
 
 export default function Layout() {
-  const { user, logOut } = useAuth()
+  const { user } = useAuth()
   const { error, dismissError } = useData()
   const navigate = useNavigate()
   const location = useLocation()
@@ -52,28 +52,22 @@ export default function Layout() {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col">
-      <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-hairline bg-plane px-4 py-3">
+      {/* Hidden on phones: the name is decoration, and Sign out now lives in
+          Settings, so the row was costing vertical space for nothing. */}
+      <header className="sticky top-0 z-30 hidden items-center justify-between gap-3 border-b border-hairline bg-plane px-4 py-3 sm:flex">
         <div className="flex items-center gap-2">
           <span aria-hidden="true" className="text-lg">📊</span>
           <span className="text-sm font-semibold text-ink">Expense Tracker</span>
         </div>
-        <div className="flex items-center gap-2">
-          {user?.photoURL && (
-            <img
-              src={user.photoURL}
-              alt=""
-              referrerPolicy="no-referrer"
-              className="h-7 w-7 rounded-full border border-hairline"
-            />
-          )}
-          <button
-            type="button"
-            onClick={logOut}
-            className="press flex h-10 items-center rounded-md border border-hairline px-3 text-xs font-medium text-ink-2 hover:bg-wash"
-          >
-            Sign out
-          </button>
-        </div>
+        {/* Sign out lives in Settings — one place, on every screen size. */}
+        {user?.photoURL && (
+          <img
+            src={user.photoURL}
+            alt=""
+            referrerPolicy="no-referrer"
+            className="h-7 w-7 rounded-full border border-hairline"
+          />
+        )}
       </header>
 
       <OfflineBanner />

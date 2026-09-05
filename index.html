@@ -3,12 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <!-- Address-bar colour tracks the page plane per scheme, so the browser
-         chrome blends into the app instead of staying brand-blue on a dark
-         page. The manifest's theme_color stays blue for the install splash and
-         task switcher — manifests cannot media-query. -->
-    <meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)" />
+    <!-- Kept in sync with the app's own theme by src/lib/theme.js, so the
+         status bar follows the in-app toggle rather than only the OS. The
+         value here is the pre-JS default; the manifest's theme_color stays
+         blue for the install splash, which cannot be changed at runtime. -->
+    <meta name="theme-color" content="#f9f9f7" />
     <meta name="description" content="Track spending, set budgets, and export to Excel — works offline." />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

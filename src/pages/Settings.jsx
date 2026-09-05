@@ -4,13 +4,14 @@ import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { CURRENCIES } from '../lib/currencies'
 import { inMonth } from '../lib/analytics'
-import { getOpenAddOnLaunch, getTheme, setOpenAddOnLaunch, setTheme } from '../lib/prefs'
+import { getOpenAddOnLaunch, getTheme, setOpenAddOnLaunch } from '../lib/prefs'
+import { applyTheme } from '../lib/theme'
 import CategoryManager from '../components/CategoryManager'
 import CsvImport from '../components/CsvImport'
 import SyncPanel from '../components/SyncPanel'
 
 export default function Settings() {
-  const { user } = useAuth()
+  const { user, logOut } = useAuth()
   const {
     selectedMonth,
     entries,
@@ -27,11 +28,9 @@ export default function Settings() {
   const [theme, setThemeState] = useState(getTheme)
   const [openAdd, setOpenAdd] = useState(getOpenAddOnLaunch)
 
-  function applyTheme(next) {
+  function chooseTheme(next) {
     setThemeState(next)
-    if (next === 'system') document.documentElement.removeAttribute('data-theme')
-    else document.documentElement.setAttribute('data-theme', next)
-    setTheme(next)
+    applyTheme(next)
   }
 
   async function exportRange(range) {
@@ -57,8 +56,28 @@ export default function Settings() {
 
       <section className="card p-4">
         <h2 className="text-sm font-semibold text-ink">Account</h2>
-        <p className="mt-1 text-sm text-ink-2">{user?.displayName || 'Signed in'}</p>
-        <p className="text-xs text-muted">{user?.email}</p>
+        <div className="mt-2 flex items-center gap-3">
+          {user?.photoURL && (
+            <img
+              src={user.photoURL}
+              alt=""
+              referrerPolicy="no-referrer"
+              className="h-10 w-10 rounded-full border border-hairline"
+            />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm text-ink-2">{user?.displayName || 'Signed in'}</p>
+            <p className="truncate text-xs text-muted">{user?.email}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={logOut}
+          className="press mt-3 min-h-[44px] w-full rounded-lg border px-4 text-sm font-medium"
+          style={{ borderColor: 'var(--border)', color: 'var(--status-critical)' }}
+        >
+          Sign out
+        </button>
       </section>
 
       <SyncPanel />
@@ -164,7 +183,7 @@ export default function Settings() {
             <button
               key={t}
               type="button"
-              onClick={() => applyTheme(t)}
+              onClick={() => chooseTheme(t)}
               aria-pressed={theme === t}
               className={`min-h-[44px] flex-1 rounded-lg border px-3 text-xs capitalize ${
                 theme === t

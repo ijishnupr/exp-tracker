@@ -85,6 +85,15 @@
           }, 400)
         }, 900)
       }
+      // ?themecolor=1 reports the live <meta name="theme-color"> value.
+      if (new URLSearchParams(location.search).get('themecolor') === '1') {
+        setTimeout(() => {
+          const m = document.querySelector('meta[name="theme-color"]:not([media])')
+          const root = document.documentElement.getAttribute('data-theme') || 'system'
+          document.getElementById('err').textContent =
+            'data-theme=' + root + '  meta theme-color=' + (m ? m.content : 'MISSING')
+        }, 800)
+      }
       const show = (m) => { document.getElementById('err').textContent += m + '\n\n' }
       window.addEventListener('error', (e) => show('ERROR: ' + (e.error?.stack || e.message)))
       window.addEventListener('unhandledrejection', (e) => show('REJECT: ' + (e.reason?.stack || e.reason)))

@@ -17,6 +17,7 @@ import Login from './pages/Login'
 import Sheet from './components/Sheet'
 import EntryForm from './components/EntryForm'
 import './index.css'
+import { applyThemeColor, watchSystemTheme } from './lib/theme'
 
 const EXPENSE_NOTES = ['Lunch', 'Metro card', 'Weekly shop', 'Electricity', 'Sneakers',
                        'Pharmacy', 'Cinema', 'Coffee', 'Cab home', 'Vegetables', 'Petrol']
@@ -161,6 +162,9 @@ function Harness() {
 // A MemoryRouter avoids needing the dev server to serve this secondary HTML
 // entry at nested paths; ?page= picks the starting route (append &add=1 to open
 // the entry sheet).
+applyThemeColor()
+watchSystemTheme()
+
 const page = new URLSearchParams(location.search).get('page') ?? '/'
 const add = new URLSearchParams(location.search).get('add') === '1'
 const entry = `${page.startsWith('/') ? page : `/${page}`}${add ? '?add=1' : ''}`
