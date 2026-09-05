@@ -15,9 +15,13 @@ try {
   // Blocked site data — fall back to the OS preference.
 }
 
+// Vite injects the build's `base`; strip the trailing slash React Router
+// does not want. '/' becomes '', which is the correct root basename.
+const basename = import.meta.env.BASE_URL.replace(/\/$/, '')
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <App />
     </BrowserRouter>
   </StrictMode>,

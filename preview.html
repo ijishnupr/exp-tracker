@@ -12,6 +12,16 @@
       // ?theme=light|dark forces a mode, so both palettes can be screenshotted.
       const t = new URLSearchParams(location.search).get('theme')
       if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+      // ?click=<button text> clicks that button once mounted, so interactive
+      // states (confirm dialogs, toggles) can be screenshotted headlessly.
+      const want = new URLSearchParams(location.search).get('click')
+      if (want) {
+        setTimeout(() => {
+          const b = [...document.querySelectorAll('button')]
+            .find((el) => el.textContent.trim().toLowerCase() === want.toLowerCase())
+          if (b) b.click()
+        }, 700)
+      }
       const show = (m) => { document.getElementById('err').textContent += m + '\n\n' }
       window.addEventListener('error', (e) => show('ERROR: ' + (e.error?.stack || e.message)))
       window.addEventListener('unhandledrejection', (e) => show('REJECT: ' + (e.reason?.stack || e.reason)))

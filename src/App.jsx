@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 import { isConfigured } from './lib/firebase'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { DataProvider } from './context/DataContext'
-import { getOpenAddOnLaunch, isStandalone } from './lib/prefs'
+import { shouldOpenAddOnLaunch } from './lib/prefs'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
@@ -84,10 +84,10 @@ function Gate() {
   )
 }
 
-/** Opens the add sheet on a cold start of the installed app, when the user has
- *  asked for that. Runs once — reopening it after every navigation would trap
- *  you in the form. */
-function LaunchIntoAdd() {
+/** Opens the add sheet on a cold start, when the user has asked for that and
+ *  the device warrants it. Runs once per page load — reopening it after every
+ *  navigation would trap you in the form. */
+export function LaunchIntoAdd() {
   const navigate = useNavigate()
   const location = useLocation()
   const done = useRef(false)
@@ -95,7 +95,7 @@ function LaunchIntoAdd() {
   useEffect(() => {
     if (done.current) return
     done.current = true
-    if (!getOpenAddOnLaunch() || !isStandalone()) return
+    if (!shouldOpenAddOnLaunch()) return
     // Only from a bare launch: a deep link or a restored tab keeps its place.
     if (location.pathname !== '/' || location.search) return
     navigate('/?add=1', { replace: true })

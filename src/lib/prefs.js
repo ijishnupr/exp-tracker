@@ -27,20 +27,41 @@ const write = (key, value) => {
 export const getTheme = () => read(KEYS.theme, 'system')
 export const setTheme = (value) => write(KEYS.theme, value)
 
-/** When on, launching the installed app goes straight to the add-entry sheet —
- *  the point of a home-screen gesture is to log something in one motion.
- *  Defaults to on. */
+/** When on, opening the app on a phone goes straight to the add-entry sheet —
+ *  the point of reaching for it is almost always to log something. Defaults to
+ *  on. */
 export const getOpenAddOnLaunch = () => read(KEYS.openAddOnLaunch, '1') === '1'
 export const setOpenAddOnLaunch = (on) => write(KEYS.openAddOnLaunch, on ? '1' : '0')
 
-/** True when running as an installed app rather than a browser tab. */
-export function isStandalone() {
+const media = (q) => {
   try {
-    return (
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone === true
-    )
+    return window.matchMedia(q).matches
   } catch {
     return false
   }
 }
+
+/** True when running as an installed app rather than a browser tab. */
+export function isStandalone() {
+  try {
+    return media('(display-mode: standalone)') || window.navigator.standalone === true
+  } catch {
+    return false
+  }
+}
+
+/** A touch-primary device: the main pointer is a finger and there is no hover.
+ *
+ *  Feature queries rather than user-agent sniffing, so this does not rot. The
+ *  `hover: none` half is what excludes a touchscreen laptop, whose primary
+ *  pointer is still a trackpad. Deliberately *not* a viewport-width test —
+ *  a large phone in landscape is wider than any sensible breakpoint, and the
+ *  form should still open there. */
+export const isMobileDevice = () => media('(pointer: coarse)') && media('(hover: none)')
+
+/** Whether a bare launch should open the add sheet. True on a phone whether or
+ *  not the app is installed, and in the installed app on any device — opening
+ *  it there is a deliberate "log something" gesture. A desktop browser tab is
+ *  left alone. */
+export const shouldOpenAddOnLaunch = () =>
+  getOpenAddOnLaunch() && (isStandalone() || isMobileDevice())

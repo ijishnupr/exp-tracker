@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { categoriesOfType, slotColor } from '../lib/categories'
-import { currencySymbol, parseAmount } from '../lib/money'
+import { currencySymbol, formatMoney, parseAmount } from '../lib/money'
 
 const today = () => format(new Date(), 'yyyy-MM-dd')
 
@@ -14,6 +14,8 @@ export default function EntryForm({ entry, currency, categories, onSubmit, onCan
   const [date, setDate] = useState(entry ? format(entry.date, 'yyyy-MM-dd') : today())
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
+  // Deleting is irreversible and there is no undo, so it takes two taps.
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const amountRef = useRef(null)
 
   const options = useMemo(() => categoriesOfType(categories, type), [categories, type])
@@ -191,16 +193,45 @@ export default function EntryForm({ entry, currency, categories, onSubmit, onCan
         </button>
       </div>
 
-      {entry && onDelete && (
-        <button
-          type="button"
-          onClick={onDelete}
-          className="w-full rounded-lg border px-4 py-2.5 text-sm font-medium"
-          style={{ borderColor: 'var(--status-critical)', color: 'var(--status-critical)' }}
-        >
-          Delete entry
-        </button>
-      )}
+      {entry && onDelete &&
+        (confirmingDelete ? (
+          <div
+            className="rounded-lg border p-3"
+            style={{ borderColor: 'var(--status-critical)' }}
+          >
+            <p className="text-sm text-ink">
+              Delete this {entry.type === 'income' ? 'income' : 'expense'} of{' '}
+              <span className="font-semibold">{formatMoney(entry.amount, currency)}</span>?
+            </p>
+            <p className="mt-0.5 text-xs text-muted">This cannot be undone.</p>
+            <div className="mt-2.5 flex gap-2">
+              <button
+                type="button"
+                onClick={onDelete}
+                className="flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold text-white"
+                style={{ background: 'var(--status-critical)' }}
+              >
+                Delete
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                className="rounded-lg border border-hairline px-4 py-2.5 text-sm font-medium text-ink-2"
+              >
+                Keep
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmingDelete(true)}
+            className="w-full rounded-lg border px-4 py-2.5 text-sm font-medium"
+            style={{ borderColor: 'var(--status-critical)', color: 'var(--status-critical)' }}
+          >
+            Delete entry
+          </button>
+        ))}
     </form>
   )
 }

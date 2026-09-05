@@ -21,6 +21,7 @@ import { useAuth } from './AuthContext'
 import { monthKey, monthWindow } from '../lib/analytics'
 import { DEFAULT_CATEGORIES, makeCategoryKey, nextSlot } from '../lib/categories'
 import { round2 } from '../lib/money'
+import { settleLocally } from '../lib/firestoreWrite'
 
 // Exported so tests and the dev preview harness can supply values directly.
 export const DataContext = createContext(null)
@@ -31,6 +32,7 @@ export const WINDOW_MONTHS = 6
 
 /** Firestore caps a batch at 500 writes. */
 const BATCH_LIMIT = 500
+
 
 const toEntry = (d) => {
   const raw = d.data()
@@ -187,76 +189,101 @@ export function DataProvider({ children }) {
 
   const currency = profile?.currency ?? 'INR'
 
+  const reportWriteError = useCallback(
+    (e) => setError(e?.message ?? 'A change could not be saved.'),
+    [],
+  )
+
   const addEntry = useCallback(
     ({ amount, type, category, note, date }) =>
-      addDoc(entriesRef(), {
+      settleLocally(
+        addDoc(entriesRef(), {
         amount: round2(amount),
         type: type === 'income' ? 'income' : 'expense',
         category,
         note: note?.trim() ?? '',
-        date: Timestamp.fromDate(date),
-        createdAt: serverTimestamp(),
-      }),
-    [entriesRef],
+          date: Timestamp.fromDate(date),
+          createdAt: serverTimestamp(),
+        }),
+        reportWriteError,
+      ),
+    [entriesRef, reportWriteError],
   )
 
   const updateEntry = useCallback(
     (id, { amount, type, category, note, date }) =>
-      updateDoc(doc(db, 'users', uid, 'expenses', id), {
+      settleLocally(
+        updateDoc(doc(db, 'users', uid, 'expenses', id), {
         amount: round2(amount),
         type: type === 'income' ? 'income' : 'expense',
         category,
         note: note?.trim() ?? '',
-        date: Timestamp.fromDate(date),
-        updatedAt: serverTimestamp(),
-      }),
-    [uid],
+          date: Timestamp.fromDate(date),
+          updatedAt: serverTimestamp(),
+        }),
+        reportWriteError,
+      ),
+    [uid, reportWriteError],
   )
 
-  const deleteEntry = useCallback((id) => deleteDoc(doc(db, 'users', uid, 'expenses', id)), [uid])
+  const deleteEntry = useCallback(
+    (id) => settleLocally(deleteDoc(doc(db, 'users', uid, 'expenses', id)), reportWriteError),
+    [uid, reportWriteError],
+  )
 
   const setBudget = useCallback(
     (categoryKey, limit) =>
-      setDoc(
-        doc(db, 'users', uid, 'budgets', categoryKey),
-        { limit: round2(limit) },
-        { merge: true },
+      settleLocally(
+        setDoc(
+          doc(db, 'users', uid, 'budgets', categoryKey),
+          { limit: round2(limit) },
+          { merge: true },
+        ),
+        reportWriteError,
       ),
-    [uid],
+    [uid, reportWriteError],
   )
 
   const removeBudget = useCallback(
-    (categoryKey) => deleteDoc(doc(db, 'users', uid, 'budgets', categoryKey)),
-    [uid],
+    (categoryKey) =>
+      settleLocally(deleteDoc(doc(db, 'users', uid, 'budgets', categoryKey)), reportWriteError),
+    [uid, reportWriteError],
   )
 
   const setCurrency = useCallback(
     (code) =>
-      setDoc(
-        doc(db, 'users', uid),
-        { currency: code, updatedAt: serverTimestamp() },
-        { merge: true },
+      settleLocally(
+        setDoc(
+          doc(db, 'users', uid),
+          { currency: code, updatedAt: serverTimestamp() },
+          { merge: true },
+        ),
+        reportWriteError,
       ),
-    [uid],
+    [uid, reportWriteError],
   )
 
   const addCategory = useCallback(
     ({ label, icon, type }) => {
       const key = makeCategoryKey(label, categories)
-      return setDoc(doc(db, 'users', uid, 'categories', key), {
-        label: label.trim().slice(0, 40),
-        icon: icon || (type === 'income' ? '💰' : '📦'),
-        type: type === 'income' ? 'income' : 'expense',
-        slot: nextSlot(categories),
-        order: categories.length,
-      })
+      return settleLocally(
+        setDoc(doc(db, 'users', uid, 'categories', key), {
+          label: label.trim().slice(0, 40),
+          icon: icon || (type === 'income' ? '💰' : '📦'),
+          type: type === 'income' ? 'income' : 'expense',
+          slot: nextSlot(categories),
+          order: categories.length,
+        }),
+        reportWriteError,
+      )
     },
-    [uid, categories],
+    [uid, categories, reportWriteError],
   )
 
   const updateCategory = useCallback(
-    (key, patch) => updateDoc(doc(db, 'users', uid, 'categories', key), patch),
-    [uid],
+    (key, patch) =>
+      settleLocally(updateDoc(doc(db, 'users', uid, 'categories', key), patch), reportWriteError),
+    [uid, reportWriteError],
   )
 
   /** Archiving rather than deleting keeps historical entries readable; a
@@ -265,13 +292,19 @@ export function DataProvider({ children }) {
     async (key) => {
       const used = await getDocs(query(entriesRef(), where('category', '==', key)))
       if (used.empty) {
-        await deleteDoc(doc(db, 'users', uid, 'categories', key))
+        await settleLocally(
+          deleteDoc(doc(db, 'users', uid, 'categories', key)),
+          reportWriteError,
+        )
         return { archived: false, entries: 0 }
       }
-      await updateDoc(doc(db, 'users', uid, 'categories', key), { archived: true })
+      await settleLocally(
+        updateDoc(doc(db, 'users', uid, 'categories', key), { archived: true }),
+        reportWriteError,
+      )
       return { archived: true, entries: used.size }
     },
-    [uid, entriesRef],
+    [uid, entriesRef, reportWriteError],
   )
 
   /** Reads the full history for "export everything" — deliberately a one-off
@@ -288,6 +321,16 @@ export function DataProvider({ children }) {
    */
   const importEntries = useCallback(
     async (records, newCategories = [], onProgress) => {
+      // Deliberately NOT fire-and-forget. Offline, each batch commit would stay
+      // pending, so the progress bar would either freeze or lie while 1500
+      // writes piled into IndexedDB. A bulk import is an online operation.
+      if (!navigator.onLine) {
+        throw new Error(
+          'Importing needs a connection — it writes in batches and reports real progress. ' +
+            'Reconnect and try again; nothing has been written.',
+        )
+      }
+
       // Any category the file needs must exist first, or entries would resolve
       // to a fallback label.
       if (newCategories.length) {

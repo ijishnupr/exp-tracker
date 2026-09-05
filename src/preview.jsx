@@ -14,7 +14,8 @@ import Transactions from './pages/Transactions'
 import Budgets from './pages/Budgets'
 import Settings from './pages/Settings'
 import Login from './pages/Login'
-import EntrySheet from './components/EntrySheet'
+import Sheet from './components/Sheet'
+import EntryForm from './components/EntryForm'
 import './index.css'
 
 const EXPENSE_NOTES = ['Lunch', 'Metro card', 'Weekly shop', 'Electricity', 'Sneakers',
@@ -125,6 +126,22 @@ function Harness() {
       <DataContext.Provider value={data}>
         <Routes>
           <Route path="login" element={<Login />} />
+          {/* Edit mode, so the delete flow is reachable without a click. */}
+          <Route
+            path="edit"
+            element={
+              <Sheet title="Edit entry" onClose={() => {}}>
+                <EntryForm
+                  entry={entries[0]}
+                  currency="INR"
+                  categories={categories}
+                  onCancel={() => {}}
+                  onSubmit={async () => {}}
+                  onDelete={() => {}}
+                />
+              </Sheet>
+            }
+          />
           <Route element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="transactions" element={<Transactions />} />

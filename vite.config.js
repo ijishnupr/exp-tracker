@@ -1,8 +1,28 @@
+import { copyFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// GitHub Pages serves a project site from a subpath
+// (https://<user>.github.io/<repo>/), so every absolute URL the app emits has
+// to be prefixed. Set BASE_PATH at build time; it defaults to '/' for local dev
+// and for hosts that serve from the root, such as Firebase Hosting.
+const base = process.env.BASE_PATH ?? '/'
+
+/** GitHub Pages has no rewrite rules, so a deep link like /exp-tracker/add
+ *  would 404. Serving the same SPA shell as 404.html lets the client router
+ *  take over — the status code is 404 but the app boots and reads the URL. */
+const spaFallback = () => ({
+  name: 'github-pages-spa-fallback',
+  closeBundle() {
+    const dir = resolve('dist')
+    copyFileSync(resolve(dir, 'index.html'), resolve(dir, '404.html'))
+  },
+})
+
 export default defineConfig({
+  base,
   build: {
     rollupOptions: {
       output: {
@@ -28,8 +48,8 @@ export default defineConfig({
         background_color: '#f9f9f7',
         display: 'standalone',
         orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
+        scope: base,
+        start_url: base,
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
@@ -42,7 +62,7 @@ export default defineConfig({
             name: 'Add entry',
             short_name: 'Add',
             description: 'Log an expense or income',
-            url: '/add',
+            url: `${base}add`,
             icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
           },
         ],
@@ -62,5 +82,6 @@ export default defineConfig({
       },
       devOptions: { enabled: false },
     }),
+    spaFallback(),
   ],
 })

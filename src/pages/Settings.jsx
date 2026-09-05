@@ -124,8 +124,8 @@ export default function Settings() {
           <span>
             <span className="block text-sm text-ink">Open the add-entry form</span>
             <span className="block text-xs text-muted">
-              Applies when you open the installed app — so a home-screen gesture takes you straight
-              to logging. Opening in a browser tab is unaffected. This setting is per device.
+              On a phone, opening the app goes straight to logging — installed or in a browser.
+              Desktop browser tabs open on the dashboard as usual. Per device.
             </span>
           </span>
         </label>
