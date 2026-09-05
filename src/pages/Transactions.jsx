@@ -32,7 +32,7 @@ export default function Transactions() {
   const t = totals(visible)
 
   return (
-    <div className="space-y-3 p-4">
+    <div className="space-y-3 p-4 pb-20">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-ink">Transactions</h1>
         <MonthPicker month={selectedMonth} onChange={setSelectedMonth} />
@@ -48,7 +48,7 @@ export default function Transactions() {
               type="button"
               onClick={() => setTypeFilter(f.key)}
               aria-pressed={active}
-              className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+              className={`min-h-[44px] rounded-full border px-4 text-xs transition-colors ${
                 active
                   ? 'border-series bg-wash font-semibold text-ink'
                   : 'border-hairline text-ink-2'
@@ -67,13 +67,13 @@ export default function Transactions() {
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search notes"
           aria-label="Search notes"
-          className="min-w-0 flex-1 rounded-lg border border-hairline bg-surface px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-series"
+          className="h-12 min-w-0 flex-1 rounded-lg border border-hairline bg-surface px-3 text-sm text-ink outline-none placeholder:text-muted focus:border-series"
         />
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           aria-label="Filter by category"
-          className="min-w-0 max-w-[45%] rounded-lg border border-hairline bg-surface px-2 py-2 text-sm text-ink outline-none focus:border-series"
+          className="h-12 min-w-0 max-w-[45%] rounded-lg border border-hairline bg-surface px-2 text-sm text-ink outline-none focus:border-series"
         >
           <option value="all">All categories</option>
           {categories

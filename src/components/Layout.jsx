@@ -35,7 +35,7 @@ export default function Layout() {
           <button
             type="button"
             onClick={logOut}
-            className="rounded-md border border-hairline px-2.5 py-1 text-xs font-medium text-ink-2 hover:bg-wash"
+            className="flex h-10 items-center rounded-md border border-hairline px-3 text-xs font-medium text-ink-2 hover:bg-wash"
           >
             Sign out
           </button>

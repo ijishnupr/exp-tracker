@@ -56,7 +56,7 @@ export default function Dashboard() {
   const recent = monthEntries.slice(0, 5)
 
   return (
-    <div className="space-y-4 p-4">
+    <div className="space-y-4 p-4 pb-20">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-ink">Overview</h1>
         <MonthPicker month={selectedMonth} onChange={setSelectedMonth} />

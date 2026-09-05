@@ -33,7 +33,7 @@ export default function Sheet({ title, onClose, children }) {
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-md px-2 py-1 text-lg leading-none text-muted hover:bg-wash"
+            className="-mr-2 flex h-11 w-11 items-center justify-center rounded-md text-lg leading-none text-muted hover:bg-wash"
           >
             ✕
           </button>

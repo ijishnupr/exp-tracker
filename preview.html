@@ -22,6 +22,39 @@
           if (b) b.click()
         }, 700)
       }
+      // ?audit=1 measures interactive elements against mobile guidance:
+      // 44x44 minimum tap target, and >=16px font on inputs (below that iOS
+      // Safari auto-zooms the page on focus).
+      if (new URLSearchParams(location.search).get('audit') === '1') {
+        setTimeout(() => {
+          const out = [`viewport innerWidth=${innerWidth} clientWidth=${document.documentElement.clientWidth}`]
+          const seen = new Set()
+          for (const el of document.querySelectorAll('button,a,input,select,textarea,[role="button"]')) {
+            const r = el.getBoundingClientRect()
+            if (!r.width || !r.height) continue
+            const cs = getComputedStyle(el)
+            const label = (el.getAttribute('aria-label') || el.textContent || el.type || el.tagName)
+              .trim().slice(0, 28) || el.tagName
+            if (r.height < 44 || r.width < 44) {
+              const k = 'T' + label + Math.round(r.width) + Math.round(r.height)
+              if (!seen.has(k)) { seen.add(k)
+                out.push(`TAP  ${Math.round(r.width)}x${Math.round(r.height)}  ${el.tagName.toLowerCase()}  "${label}"`) }
+            }
+            if (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) {
+              const fs = parseFloat(cs.fontSize)
+              if (fs < 16) {
+                const k = 'F' + label + fs
+                if (!seen.has(k)) { seen.add(k)
+                  out.push(`ZOOM ${fs}px  ${el.tagName.toLowerCase()}  "${label}"`) }
+              }
+            }
+          }
+          const de = document.documentElement
+          if (de.scrollWidth > de.clientWidth)
+            out.push(`OVERFLOW page scrolls sideways: ${de.scrollWidth} > ${de.clientWidth}`)
+          document.getElementById('err').textContent = out.join('\n') || 'no mobile issues found'
+        }, 900)
+      }
       const show = (m) => { document.getElementById('err').textContent += m + '\n\n' }
       window.addEventListener('error', (e) => show('ERROR: ' + (e.error?.stack || e.message)))
       window.addEventListener('unhandledrejection', (e) => show('REJECT: ' + (e.reason?.stack || e.reason)))

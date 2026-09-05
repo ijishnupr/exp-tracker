@@ -71,7 +71,7 @@ export default function EntryForm({ entry, currency, categories, onSubmit, onCan
               type="button"
               onClick={() => setType(t.key)}
               aria-pressed={active}
-              className={`rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+              className={`min-h-[48px] rounded-lg border px-3 text-sm transition-colors ${
                 active
                   ? 'border-series bg-wash font-semibold text-ink'
                   : 'border-hairline text-ink-2'
@@ -99,7 +99,7 @@ export default function EntryForm({ entry, currency, categories, onSubmit, onCan
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className="w-full bg-transparent py-3 text-2xl font-semibold tabular text-ink outline-none placeholder:font-normal placeholder:text-muted"
+            className="amount-field w-full bg-transparent py-3 text-2xl font-semibold tabular text-ink outline-none placeholder:font-normal placeholder:text-muted"
           />
         </div>
       </div>
@@ -117,7 +117,7 @@ export default function EntryForm({ entry, currency, categories, onSubmit, onCan
                 type="button"
                 onClick={() => setCategory(c.key)}
                 aria-pressed={active}
-                className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs transition-colors ${
+                className={`flex min-h-[44px] items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs transition-colors ${
                   active
                     ? 'border-series bg-wash font-semibold text-ink'
                     : 'border-hairline text-ink-2'
@@ -151,7 +151,7 @@ export default function EntryForm({ entry, currency, categories, onSubmit, onCan
             value={date}
             max={today()}
             onChange={(e) => setDate(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-series"
+            className="mt-1 h-12 w-full rounded-lg border border-hairline bg-surface px-3 text-sm text-ink outline-none focus:border-series"
           />
         </div>
         <div>
@@ -165,7 +165,7 @@ export default function EntryForm({ entry, currency, categories, onSubmit, onCan
             maxLength={500}
             onChange={(e) => setNote(e.target.value)}
             placeholder={type === 'income' ? 'August salary' : 'Lunch with the team'}
-            className="mt-1 w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none placeholder:text-muted focus:border-series"
+            className="mt-1 h-12 w-full rounded-lg border border-hairline bg-surface px-3 text-sm text-ink outline-none placeholder:text-muted focus:border-series"
           />
         </div>
       </div>
@@ -176,7 +176,7 @@ export default function EntryForm({ entry, currency, categories, onSubmit, onCan
         </p>
       )}
 
-      <div className="flex items-center gap-2 pt-1">
+      <div className="sticky bottom-0 -mx-5 flex items-center gap-2 border-t border-hairline bg-surface px-5 py-3">
         <button
           type="submit"
           disabled={saving}

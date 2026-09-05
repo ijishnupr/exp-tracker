@@ -105,6 +105,26 @@
 
 html {
   background: var(--plane);
+  /* Removes the 300ms click delay some mobile browsers still apply. */
+  touch-action: manipulation;
+}
+
+/* iOS Safari zooms the whole page when a focused field is under 16px, and
+   never zooms back out. Every control is therefore at least 16px on a touch
+   device; pointer-precise devices keep the tighter 14px type. */
+@media (pointer: coarse) {
+  /* The :not() qualifiers are load-bearing: a bare `select` selector loses the
+     specificity contest to Tailwind's .text-sm utility, so the rule would
+     silently not apply to dropdowns. */
+  input:not([type='checkbox']):not([type='range']),
+  select:not([hidden]),
+  textarea:not([hidden]) {
+    font-size: 16px;
+  }
+  /* …except where the design already sets something larger. */
+  .amount-field {
+    font-size: 1.5rem;
+  }
 }
 
 body {

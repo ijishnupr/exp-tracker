@@ -67,7 +67,7 @@ export default function CategoryManager({ categories, onAdd, onUpdate, onRemove 
             type="button"
             onClick={() => setType(t)}
             aria-pressed={type === t}
-            className={`rounded-full border px-3 py-1 text-xs capitalize transition-colors ${
+            className={`min-h-[44px] rounded-full border px-4 text-xs capitalize transition-colors ${
               type === t ? 'border-series bg-wash font-semibold text-ink' : 'border-hairline text-ink-2'
             }`}
           >
@@ -85,9 +85,14 @@ export default function CategoryManager({ categories, onAdd, onUpdate, onRemove 
                 onClick={() => onUpdate(c.key, { slot: (c.slot % SLOT_COUNT) + 1 })}
                 title="Change colour"
                 aria-label={`Change colour of ${c.label}`}
-                className="h-4 w-4 shrink-0 rounded-sm ring-1 ring-inset ring-black/10"
-                style={{ background: slotColor(c.slot) }}
-              />
+                className="-ml-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md hover:bg-wash"
+              >
+                <span
+                  aria-hidden="true"
+                  className="h-4 w-4 rounded-sm ring-1 ring-inset ring-black/10"
+                  style={{ background: slotColor(c.slot) }}
+                />
+              </button>
               <span aria-hidden="true" className="w-5 text-center">{c.icon}</span>
               {editingKey === c.key ? (
                 <input
@@ -109,7 +114,7 @@ export default function CategoryManager({ categories, onAdd, onUpdate, onRemove 
                 <button
                   type="button"
                   onClick={() => setEditingKey(c.key)}
-                  className="min-w-0 flex-1 truncate text-left text-sm text-ink hover:underline"
+                  className="min-h-[44px] min-w-0 flex-1 truncate text-left text-sm text-ink hover:underline"
                   title="Rename"
                 >
                   {c.label}
@@ -121,7 +126,7 @@ export default function CategoryManager({ categories, onAdd, onUpdate, onRemove 
                   type="button"
                   disabled={busy}
                   onClick={() => onUpdate(c.key, { archived: false })}
-                  className="shrink-0 rounded border border-hairline px-2 py-1 text-xs text-ink-2"
+                  className="h-10 shrink-0 rounded border border-hairline px-3 text-xs text-ink-2"
                 >
                   Restore
                 </button>
@@ -131,7 +136,7 @@ export default function CategoryManager({ categories, onAdd, onUpdate, onRemove 
                   disabled={busy}
                   onClick={() => remove(c)}
                   aria-label={`Remove ${c.label}`}
-                  className="shrink-0 rounded border px-2 py-1 text-xs"
+                  className="h-10 shrink-0 rounded border px-3 text-xs"
                   style={{ borderColor: 'var(--border)', color: 'var(--status-critical)' }}
                 >
                   Remove
@@ -150,7 +155,7 @@ export default function CategoryManager({ categories, onAdd, onUpdate, onRemove 
           maxLength={2}
           placeholder="🍔"
           aria-label="Category icon"
-          className="w-12 rounded-lg border border-hairline bg-surface px-2 py-2 text-center text-sm outline-none focus:border-series"
+          className="h-12 w-14 rounded-lg border border-hairline bg-surface px-2 text-center text-sm outline-none focus:border-series"
         />
         <input
           value={label}
@@ -158,12 +163,12 @@ export default function CategoryManager({ categories, onAdd, onUpdate, onRemove 
           maxLength={40}
           placeholder={`New ${type} category`}
           aria-label="New category name"
-          className="min-w-0 flex-1 rounded-lg border border-hairline bg-surface px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-series"
+          className="h-12 min-w-0 flex-1 rounded-lg border border-hairline bg-surface px-3 text-sm text-ink outline-none placeholder:text-muted focus:border-series"
         />
         <button
           type="submit"
           disabled={busy || !label.trim()}
-          className="shrink-0 rounded-lg bg-series px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+          className="h-12 shrink-0 rounded-lg bg-series px-4 text-xs font-semibold text-white disabled:opacity-50"
         >
           Add
         </button>

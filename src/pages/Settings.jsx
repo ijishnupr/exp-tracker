@@ -80,7 +80,7 @@ export default function Settings() {
             type="button"
             onClick={() => exportRange('month')}
             disabled={busy !== null}
-            className="rounded-lg bg-series px-3 py-2 text-xs font-semibold text-white disabled:opacity-60"
+            className="min-h-[44px] rounded-lg bg-series px-4 text-xs font-semibold text-white disabled:opacity-60"
           >
             {busy === 'month' ? 'Preparing…' : `Export ${format(selectedMonth, 'MMM yyyy')}`}
           </button>
@@ -88,7 +88,7 @@ export default function Settings() {
             type="button"
             onClick={() => exportRange('all')}
             disabled={busy !== null}
-            className="rounded-lg border border-hairline px-3 py-2 text-xs font-medium text-ink-2 disabled:opacity-60"
+            className="min-h-[44px] rounded-lg border border-hairline px-4 text-xs font-medium text-ink-2 disabled:opacity-60"
           >
             {busy === 'all' ? 'Preparing…' : 'Export all time'}
           </button>
@@ -119,7 +119,7 @@ export default function Settings() {
               setOpenAdd(e.target.checked)
               setOpenAddOnLaunch(e.target.checked)
             }}
-            className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--series-1)]"
+            className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--series-1)]"
           />
           <span>
             <span className="block text-sm text-ink">Open the add-entry form</span>
@@ -141,7 +141,7 @@ export default function Settings() {
           value={currency}
           onChange={(e) => setCurrency(e.target.value)}
           aria-label="Currency"
-          className="mt-2 w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-series"
+          className="mt-2 h-12 w-full rounded-lg border border-hairline bg-surface px-3 text-sm text-ink outline-none focus:border-series"
         >
           {CURRENCIES.map((c) => (
             <option key={c.code} value={c.code}>
@@ -163,7 +163,7 @@ export default function Settings() {
               type="button"
               onClick={() => applyTheme(t)}
               aria-pressed={theme === t}
-              className={`flex-1 rounded-lg border px-3 py-2 text-xs capitalize ${
+              className={`min-h-[44px] flex-1 rounded-lg border px-3 text-xs capitalize ${
                 theme === t
                   ? 'border-series bg-wash font-semibold text-ink'
                   : 'border-hairline text-ink-2'

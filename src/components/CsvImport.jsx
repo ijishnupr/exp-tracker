@@ -78,7 +78,7 @@ export default function CsvImport() {
           accept=".csv,text/csv"
           onChange={pick}
           aria-label="Choose a CSV file"
-          className="w-full rounded-lg border border-hairline bg-surface px-3 py-2 text-xs text-ink-2 file:mr-3 file:rounded file:border-0 file:bg-wash file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-ink"
+          className="w-full rounded-lg border border-hairline bg-surface px-3 py-3 text-sm text-ink-2 file:mr-3 file:min-h-[36px] file:rounded file:border-0 file:bg-wash file:px-3 file:text-sm file:font-medium file:text-ink"
         />
       )}
 
@@ -119,14 +119,14 @@ export default function CsvImport() {
             <button
               type="button"
               onClick={confirm}
-              className="rounded-lg bg-series px-3 py-2 text-xs font-semibold text-white"
+              className="min-h-[44px] rounded-lg bg-series px-4 text-xs font-semibold text-white"
             >
               Import {s.imported} entries
             </button>
             <button
               type="button"
               onClick={reset}
-              className="rounded-lg border border-hairline px-3 py-2 text-xs font-medium text-ink-2"
+              className="min-h-[44px] rounded-lg border border-hairline px-4 text-xs font-medium text-ink-2"
             >
               Cancel
             </button>

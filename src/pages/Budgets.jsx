@@ -114,7 +114,7 @@ export default function Budgets() {
                     onBlur={() => dirty && save(c.key)}
                     onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
                     placeholder="—"
-                    className="w-20 bg-transparent py-2 text-right text-sm tabular text-ink outline-none placeholder:text-muted"
+                    className="h-11 w-20 bg-transparent text-right text-sm tabular text-ink outline-none placeholder:text-muted"
                   />
                 </div>
                 <span className="w-10 shrink-0 text-xs text-muted">
