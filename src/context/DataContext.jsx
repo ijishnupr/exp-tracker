@@ -9,9 +9,11 @@ import {
   onSnapshot,
   orderBy,
   query,
+  enableNetwork,
   serverTimestamp,
   setDoc,
   updateDoc,
+  waitForPendingWrites,
   where,
   writeBatch,
 } from 'firebase/firestore'
@@ -22,6 +24,7 @@ import { monthKey, monthWindow } from '../lib/analytics'
 import { DEFAULT_CATEGORIES, makeCategoryKey, nextSlot } from '../lib/categories'
 import { round2 } from '../lib/money'
 import { settleLocally } from '../lib/firestoreWrite'
+import { getLastSyncedAt, setLastSyncedAt } from '../lib/prefs'
 
 // Exported so tests and the dev preview harness can supply values directly.
 export const DataContext = createContext(null)
@@ -72,6 +75,10 @@ export function DataProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [pendingWrites, setPendingWrites] = useState(false)
+  // How many documents in view are still waiting on the server. Firestore only
+  // exposes a boolean globally, so this is counted from the snapshot.
+  const [pendingCount, setPendingCount] = useState(0)
+  const [lastSyncedAt, setLastSynced] = useState(getLastSyncedAt)
   const [error, setError] = useState(null)
 
   const uid = user?.uid
@@ -105,6 +112,14 @@ export function DataProvider({ children }) {
       (snap) => {
         setEntries(snap.docs.map(toEntry))
         setPendingWrites(snap.metadata.hasPendingWrites)
+        setPendingCount(snap.docs.filter((d) => d.metadata.hasPendingWrites).length)
+        // A snapshot with nothing pending, served from the server rather than
+        // the cache, is the honest definition of "everything is up to date".
+        if (!snap.metadata.hasPendingWrites && !snap.metadata.fromCache) {
+          const now = Date.now()
+          setLastSynced(now)
+          setLastSyncedAt(now)
+        }
         setLoading(false)
         setError(null)
       },
@@ -307,6 +322,37 @@ export function DataProvider({ children }) {
     [uid, entriesRef, reportWriteError],
   )
 
+  /**
+   * Firestore syncs on its own; this is the manual nudge for when you want to
+   * be sure before closing the app or getting on a plane. It re-enables the
+   * network in case it was dropped, then waits for every queued write to be
+   * acknowledged by the server.
+   */
+  const syncNow = useCallback(async () => {
+    if (!navigator.onLine) {
+      throw new Error('Still offline — your changes are saved on this device and will sync by themselves once you reconnect.')
+    }
+    await enableNetwork(db)
+    let timer
+    try {
+      await Promise.race([
+        waitForPendingWrites(db),
+        new Promise((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error('Sync is taking unusually long. Your changes are safe locally; leave the app open and it will finish.')),
+            20000,
+          )
+        }),
+      ])
+    } finally {
+      clearTimeout(timer)
+    }
+    const now = Date.now()
+    setLastSynced(now)
+    setLastSyncedAt(now)
+    return now
+  }, [])
+
   /** Reads the full history for "export everything" — deliberately a one-off
    *  get rather than widening the live subscription. */
   const fetchAllEntries = useCallback(async () => {
@@ -385,10 +431,14 @@ export function DataProvider({ children }) {
       entries,
       budgets,
       categories,
+      categoriesLoaded,
       profile,
       currency,
       loading,
       pendingWrites,
+      pendingCount,
+      lastSyncedAt,
+      syncNow,
       error,
       dismissError: () => setError(null),
       addEntry,
@@ -409,10 +459,14 @@ export function DataProvider({ children }) {
       entries,
       budgets,
       categories,
+      categoriesLoaded,
       profile,
       currency,
       loading,
       pendingWrites,
+      pendingCount,
+      lastSyncedAt,
+      syncNow,
       error,
       addEntry,
       updateEntry,

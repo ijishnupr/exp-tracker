@@ -11,7 +11,7 @@ import { useData } from '../context/DataContext'
  */
 export default function EntrySheet({ entry, onClose }) {
   const [params, setParams] = useSearchParams()
-  const { currency, categories, addEntry, updateEntry, deleteEntry } = useData()
+  const { currency, categories, categoriesLoaded, addEntry, updateEntry, deleteEntry } = useData()
 
   const adding = params.get('add') === '1'
   const editing = Boolean(entry)
@@ -34,6 +34,7 @@ export default function EntrySheet({ entry, onClose }) {
         entry={entry}
         currency={currency}
         categories={categories}
+        categoriesLoaded={categoriesLoaded}
         onCancel={close}
         onSubmit={async (data) => {
           if (editing) await updateEntry(entry.id, data)

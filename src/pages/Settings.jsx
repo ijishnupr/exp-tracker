@@ -7,6 +7,7 @@ import { inMonth } from '../lib/analytics'
 import { getOpenAddOnLaunch, getTheme, setOpenAddOnLaunch, setTheme } from '../lib/prefs'
 import CategoryManager from '../components/CategoryManager'
 import CsvImport from '../components/CsvImport'
+import SyncPanel from '../components/SyncPanel'
 
 export default function Settings() {
   const { user } = useAuth()
@@ -59,6 +60,8 @@ export default function Settings() {
         <p className="mt-1 text-sm text-ink-2">{user?.displayName || 'Signed in'}</p>
         <p className="text-xs text-muted">{user?.email}</p>
       </section>
+
+      <SyncPanel />
 
       <CategoryManager
         categories={categories}

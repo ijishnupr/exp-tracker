@@ -4,6 +4,7 @@
 const KEYS = {
   theme: 'exp-tracker:theme',
   openAddOnLaunch: 'exp-tracker:open-add-on-launch',
+  lastSyncedAt: 'exp-tracker:last-synced-at',
 }
 
 const read = (key, fallback) => {
@@ -65,3 +66,11 @@ export const isMobileDevice = () => media('(pointer: coarse)') && media('(hover:
  *  left alone. */
 export const shouldOpenAddOnLaunch = () =>
   getOpenAddOnLaunch() && (isStandalone() || isMobileDevice())
+
+/** Timestamp of the last snapshot that came from the server with nothing
+ *  queued — i.e. the last moment this device was provably up to date. */
+export const getLastSyncedAt = () => {
+  const v = Number(read(KEYS.lastSyncedAt, '0'))
+  return Number.isFinite(v) && v > 0 ? v : null
+}
+export const setLastSyncedAt = (ms) => write(KEYS.lastSyncedAt, String(ms))

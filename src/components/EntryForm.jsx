@@ -7,7 +7,15 @@ const today = () => format(new Date(), 'yyyy-MM-dd')
 
 /** Add/edit sheet. Amount is the first field and gets focus, because logging an
  *  entry should be a two-tap job on a phone. */
-export default function EntryForm({ entry, currency, categories, onSubmit, onCancel, onDelete }) {
+export default function EntryForm({
+  entry,
+  currency,
+  categories,
+  categoriesLoaded = true,
+  onSubmit,
+  onCancel,
+  onDelete,
+}) {
   const [type, setType] = useState(entry?.type === 'income' ? 'income' : 'expense')
   const [amount, setAmount] = useState(entry ? String(entry.amount) : '')
   const [note, setNote] = useState(entry?.note ?? '')
@@ -135,7 +143,12 @@ export default function EntryForm({ entry, currency, categories, onSubmit, onCan
         </div>
         {!options.length && (
           <p className="mt-2 text-xs text-muted">
-            No {type} categories yet — add one in Settings.
+            {/* Before the first snapshot arrives the list is empty but not
+                absent — saying "none yet" there would be a lie that also
+                sends people to Settings for no reason. */}
+            {categoriesLoaded
+              ? `No ${type} categories yet — add one in Settings.`
+              : 'Loading your categories…'}
           </p>
         )}
       </fieldset>
