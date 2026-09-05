@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Preview — Expense Tracker</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <pre id="err" style="white-space:pre-wrap;color:#b00;font:12px monospace"></pre>
+    <script>
+      // ?theme=light|dark forces a mode, so both palettes can be screenshotted.
+      const t = new URLSearchParams(location.search).get('theme')
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+      const show = (m) => { document.getElementById('err').textContent += m + '\n\n' }
+      window.addEventListener('error', (e) => show('ERROR: ' + (e.error?.stack || e.message)))
+      window.addEventListener('unhandledrejection', (e) => show('REJECT: ' + (e.reason?.stack || e.reason)))
+    </script>
+    <script type="module" src="/src/preview.jsx"></script>
+  </body>
+</html>

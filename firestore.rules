@@ -1,0 +1,70 @@
+rules_version = '2';
+
+// Every document lives under users/{uid}, so the whole ruleset reduces to
+// "you may only touch your own subtree" plus shape validation on writes.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(
+             ['email', 'displayName', 'photoURL', 'currency', 'createdAt', 'updatedAt']);
+      allow delete: if false;
+
+      // Transactions: both expenses and income live here, distinguished by
+      // `type`. The collection keeps its original name so existing entries and
+      // their ids stay valid.
+      match /expenses/{entryId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.amount is number
+          && request.resource.data.amount > 0
+          && request.resource.data.amount <= 100000000
+          && request.resource.data.type in ['expense', 'income']
+          && request.resource.data.category is string
+          && request.resource.data.category.size() > 0
+          && request.resource.data.category.size() <= 40
+          && request.resource.data.date is timestamp
+          && (!('note' in request.resource.data)
+              || (request.resource.data.note is string
+                  && request.resource.data.note.size() <= 500));
+      }
+
+      match /budgets/{category} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.limit is number
+          && request.resource.data.limit >= 0
+          && request.resource.data.limit <= 100000000;
+      }
+
+      // Categories are user-editable. `slot` indexes the fixed colour palette.
+      match /categories/{categoryKey} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && request.resource.data.label is string
+          && request.resource.data.label.size() > 0
+          && request.resource.data.label.size() <= 40
+          && request.resource.data.type in ['expense', 'income']
+          && request.resource.data.slot is int
+          && request.resource.data.slot >= 1
+          && request.resource.data.slot <= 8
+          && (!('icon' in request.resource.data)
+              || (request.resource.data.icon is string
+                  && request.resource.data.icon.size() <= 8))
+          && (!('archived' in request.resource.data)
+              || request.resource.data.archived is bool);
+      }
+    }
+
+    // Anything not matched above is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

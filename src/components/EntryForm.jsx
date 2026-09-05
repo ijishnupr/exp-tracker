@@ -1,0 +1,206 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { format } from 'date-fns'
+import { categoriesOfType, slotColor } from '../lib/categories'
+import { currencySymbol, parseAmount } from '../lib/money'
+
+const today = () => format(new Date(), 'yyyy-MM-dd')
+
+/** Add/edit sheet. Amount is the first field and gets focus, because logging an
+ *  entry should be a two-tap job on a phone. */
+export default function EntryForm({ entry, currency, categories, onSubmit, onCancel, onDelete }) {
+  const [type, setType] = useState(entry?.type === 'income' ? 'income' : 'expense')
+  const [amount, setAmount] = useState(entry ? String(entry.amount) : '')
+  const [note, setNote] = useState(entry?.note ?? '')
+  const [date, setDate] = useState(entry ? format(entry.date, 'yyyy-MM-dd') : today())
+  const [error, setError] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const amountRef = useRef(null)
+
+  const options = useMemo(() => categoriesOfType(categories, type), [categories, type])
+  const [category, setCategory] = useState(entry?.category ?? '')
+
+  // Switching type replaces the whole category list, so keep the selection
+  // valid rather than leaving a stale expense category on an income entry.
+  useEffect(() => {
+    if (!options.some((c) => c.key === category)) {
+      setCategory(options[0]?.key ?? '')
+    }
+  }, [options, category])
+
+  useEffect(() => {
+    amountRef.current?.focus()
+  }, [])
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    const parsed = parseAmount(amount)
+    if (parsed == null) {
+      setError('Enter an amount greater than zero.')
+      return
+    }
+    if (!category) {
+      setError('Pick a category.')
+      return
+    }
+    setSaving(true)
+    setError(null)
+    try {
+      // Parsed as local noon so a date never shifts a day across time zones.
+      const [y, m, d] = date.split('-').map(Number)
+      await onSubmit({ amount: parsed, type, category, note, date: new Date(y, m - 1, d, 12) })
+    } catch (err) {
+      setError(err.message ?? 'Could not save. Please try again.')
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Type first: it changes which categories exist below. */}
+      <div role="group" aria-label="Entry type" className="grid grid-cols-2 gap-2">
+        {[
+          { key: 'expense', label: 'Expense', sign: '−' },
+          { key: 'income', label: 'Income', sign: '+' },
+        ].map((t) => {
+          const active = type === t.key
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setType(t.key)}
+              aria-pressed={active}
+              className={`rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+                active
+                  ? 'border-series bg-wash font-semibold text-ink'
+                  : 'border-hairline text-ink-2'
+              }`}
+            >
+              <span aria-hidden="true" className="mr-1.5">{t.sign}</span>
+              {t.label}
+            </button>
+          )
+        })}
+      </div>
+
+      <div>
+        <label htmlFor="amount" className="block text-xs font-medium uppercase tracking-wide text-muted">
+          Amount
+        </label>
+        <div className="mt-1 flex items-center gap-2 rounded-lg border border-hairline bg-surface px-3 focus-within:border-series">
+          <span className="text-lg text-muted">{currencySymbol(currency)}</span>
+          <input
+            ref={amountRef}
+            id="amount"
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0.00"
+            className="w-full bg-transparent py-3 text-2xl font-semibold tabular text-ink outline-none placeholder:font-normal placeholder:text-muted"
+          />
+        </div>
+      </div>
+
+      <fieldset>
+        <legend className="block text-xs font-medium uppercase tracking-wide text-muted">
+          Category
+        </legend>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {options.map((c) => {
+            const active = c.key === category
+            return (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => setCategory(c.key)}
+                aria-pressed={active}
+                className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs transition-colors ${
+                  active
+                    ? 'border-series bg-wash font-semibold text-ink'
+                    : 'border-hairline text-ink-2'
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                  style={{ background: slotColor(c.slot) }}
+                />
+                <span className="truncate">{c.label}</span>
+              </button>
+            )
+          })}
+        </div>
+        {!options.length && (
+          <p className="mt-2 text-xs text-muted">
+            No {type} categories yet — add one in Settings.
+          </p>
+        )}
+      </fieldset>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="date" className="block text-xs font-medium uppercase tracking-wide text-muted">
+            Date
+          </label>
+          <input
+            id="date"
+            type="date"
+            value={date}
+            max={today()}
+            onChange={(e) => setDate(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none focus:border-series"
+          />
+        </div>
+        <div>
+          <label htmlFor="note" className="block text-xs font-medium uppercase tracking-wide text-muted">
+            Note <span className="font-normal normal-case">(optional)</span>
+          </label>
+          <input
+            id="note"
+            type="text"
+            value={note}
+            maxLength={500}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={type === 'income' ? 'August salary' : 'Lunch with the team'}
+            className="mt-1 w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 text-sm text-ink outline-none placeholder:text-muted focus:border-series"
+          />
+        </div>
+      </div>
+
+      {error && (
+        <p role="alert" className="text-sm" style={{ color: 'var(--status-critical)' }}>
+          {error}
+        </p>
+      )}
+
+      <div className="flex items-center gap-2 pt-1">
+        <button
+          type="submit"
+          disabled={saving}
+          className="flex-1 rounded-lg bg-series px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {saving ? 'Saving…' : entry ? 'Save changes' : `Add ${type}`}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg border border-hairline px-4 py-3 text-sm font-medium text-ink-2"
+        >
+          Cancel
+        </button>
+      </div>
+
+      {entry && onDelete && (
+        <button
+          type="button"
+          onClick={onDelete}
+          className="w-full rounded-lg border px-4 py-2.5 text-sm font-medium"
+          style={{ borderColor: 'var(--status-critical)', color: 'var(--status-critical)' }}
+        >
+          Delete entry
+        </button>
+      )}
+    </form>
+  )
+}
