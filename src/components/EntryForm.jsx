@@ -193,7 +193,7 @@ export default function EntryForm({
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 rounded-lg bg-series px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+          className="press flex-1 rounded-lg bg-series px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
         >
           {saving ? 'Saving…' : entry ? 'Save changes' : `Add ${type}`}
         </button>

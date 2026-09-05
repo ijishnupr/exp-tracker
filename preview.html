@@ -55,6 +55,36 @@
           document.getElementById('err').textContent = out.join('\n') || 'no mobile issues found'
         }, 900)
       }
+      // ?swipe=left|right fires a synthetic touch gesture across <main>, so
+      // swipe navigation can be exercised headlessly.
+      const sw = new URLSearchParams(location.search).get('swipe')
+      if (sw) {
+        setTimeout(() => {
+          const main = document.querySelector('main')
+          if (!main) return
+          const r = main.getBoundingClientRect()
+          const y = r.top + r.height / 2
+          const from = sw === 'left' ? r.right - 40 : r.left + 40
+          const to = sw === 'left' ? r.left + 40 : r.right - 40
+          const mode = new URLSearchParams(location.search).get('mode') || 'normal'
+          const type = mode === 'mouse' ? 'mouse' : 'touch'
+          const opts = (x, yy) => ({ bubbles: true, cancelable: true, clientX: x, clientY: yy ?? y,
+                                     pointerId: 1, pointerType: type, isPrimary: true })
+          let a = [from, y], b = [to, y]
+          if (mode === 'vertical') { a = [r.left + 60, r.top + 40]; b = [r.left + 90, r.top + 400] }
+          if (mode === 'short')    { a = [from, y]; b = [from - 25, y] }
+          const target = mode === 'oninput'
+            ? (document.querySelector('main input, main select') || main) : main
+          target.dispatchEvent(new PointerEvent('pointerdown', opts(a[0], a[1])))
+          target.dispatchEvent(new PointerEvent('pointerup', opts(b[0], b[1])))
+          setTimeout(() => {
+            const active = [...document.querySelectorAll('nav a')]
+              .find((a) => a.className.includes('text-series'))
+            document.getElementById('err').textContent =
+              'after swipe ' + sw + ': active tab = ' + (active ? active.textContent.trim() : 'none')
+          }, 400)
+        }, 900)
+      }
       const show = (m) => { document.getElementById('err').textContent += m + '\n\n' }
       window.addEventListener('error', (e) => show('ERROR: ' + (e.error?.stack || e.message)))
       window.addEventListener('unhandledrejection', (e) => show('REJECT: ' + (e.reason?.stack || e.reason)))

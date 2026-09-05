@@ -13,7 +13,7 @@ export default function AddButton() {
         next.set('add', '1')
         setParams(next)
       }}
-      className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-series text-2xl font-light text-white shadow-lg"
+      className="press fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full bg-series text-2xl font-light text-white shadow-lg"
       aria-label="Add entry"
     >
       +

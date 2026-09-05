@@ -17,7 +17,7 @@ export default function Sheet({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       <div
-        className="absolute inset-0 bg-black/40"
+        className="anim-fade-in absolute inset-0 bg-black/40"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -25,7 +25,7 @@ export default function Sheet({ title, onClose, children }) {
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-hairline bg-surface p-5 pb-8 sm:max-w-lg sm:rounded-2xl sm:pb-5"
+        className="anim-sheet relative max-h-[92vh] w-full overflow-y-auto overscroll-contain rounded-t-2xl border border-hairline bg-surface p-5 pb-8 sm:max-w-lg sm:rounded-2xl sm:pb-5"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-ink">{title}</h2>

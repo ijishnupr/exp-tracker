@@ -153,6 +153,66 @@ body {
   outline: none;
 }
 
+
+/* ---------------------------------------------------------------- motion --
+   Transforms and opacity only, so every animation stays on the compositor and
+   cannot cause layout. Durations are short on purpose: a page transition you
+   notice is a page transition that is too slow. The reduced-motion block at
+   the end of this file neutralises all of it. */
+
+@keyframes page-in-right {
+  from { opacity: 0; transform: translate3d(18px, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes page-in-left {
+  from { opacity: 0; transform: translate3d(-18px, 0, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes sheet-up {
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes sheet-scale {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.page-in-right { animation: page-in-right 190ms cubic-bezier(0.22, 0.8, 0.36, 1) both; }
+.page-in-left  { animation: page-in-left  190ms cubic-bezier(0.22, 0.8, 0.36, 1) both; }
+.anim-fade-in  { animation: fade-in 160ms ease-out both; }
+.anim-sheet    { animation: sheet-up 220ms cubic-bezier(0.22, 0.8, 0.36, 1) both; }
+
+@media (min-width: 640px) {
+  /* On a wide screen the sheet is a centred dialog, so it scales rather than
+     rising from an edge it is nowhere near. */
+  .anim-sheet { animation-name: sheet-scale; }
+}
+
+/* Tap feedback. `active` fires on touch immediately, where :hover never does. */
+.press {
+  transition: transform 120ms ease-out, background-color 120ms ease-out;
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* Rows and controls settle into their hover/active state rather than snapping. */
+button,
+a,
+select,
+input[type='checkbox'] {
+  transition: background-color 140ms ease-out, border-color 140ms ease-out,
+    color 140ms ease-out, opacity 140ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

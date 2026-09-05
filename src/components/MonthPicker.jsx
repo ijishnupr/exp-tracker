@@ -12,14 +12,14 @@ export default function MonthPicker({ month, onChange }) {
         type="button"
         onClick={() => onChange(startOfMonth(subMonths(month, 1)))}
         aria-label="Previous month"
-        className="flex h-11 w-11 items-center justify-center rounded-md text-lg text-ink-2 hover:bg-wash"
+        className="press flex h-11 w-11 items-center justify-center rounded-md text-lg text-ink-2 hover:bg-wash"
       >
         ‹
       </button>
       <button
         type="button"
         onClick={() => onChange(startOfMonth(new Date()))}
-        className="h-11 min-w-[104px] rounded-md px-2 text-sm font-semibold text-ink hover:bg-wash"
+        className="press h-11 min-w-[104px] rounded-md px-2 text-sm font-semibold text-ink hover:bg-wash"
         title="Jump to this month"
       >
         {monthLabel(month)}
@@ -29,7 +29,7 @@ export default function MonthPicker({ month, onChange }) {
         onClick={() => onChange(startOfMonth(addMonths(month, 1)))}
         disabled={atCurrent}
         aria-label="Next month"
-        className="flex h-11 w-11 items-center justify-center rounded-md text-lg text-ink-2 hover:bg-wash disabled:opacity-30"
+        className="press flex h-11 w-11 items-center justify-center rounded-md text-lg text-ink-2 hover:bg-wash disabled:opacity-30"
       >
         ›
       </button>

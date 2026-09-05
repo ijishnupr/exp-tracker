@@ -16,6 +16,21 @@ export const AuthContext = createContext(null)
  *  is wrong. Normal resolution is well under a second. */
 const AUTH_INIT_TIMEOUT_MS = 10000
 
+/** Marks that this tab kicked off a redirect sign-in, so the next load knows
+ *  there is genuinely a result worth fetching. */
+const REDIRECT_FLAG = 'exp-tracker:redirect-pending'
+
+/** Reading sessionStorage throws outright in some blocked-storage contexts.
+ *  Erring towards `true` there keeps redirect sign-in working; the cost is the
+ *  old slow path, only for browsers that block storage entirely. */
+function hasPendingRedirect() {
+  try {
+    return sessionStorage.getItem(REDIRECT_FLAG) !== null
+  } catch {
+    return true
+  }
+}
+
 /** Popups are blocked inside some installed-PWA webviews; those report one of
  *  these codes, and redirect is the working fallback. */
 const POPUP_UNAVAILABLE = new Set([
@@ -42,9 +57,26 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!isConfigured) return
-    // Completes a redirect sign-in started on a previous page load. Failures
-    // here are non-fatal: onAuthStateChanged still settles the loading state.
-    getRedirectResult(auth).catch((e) => setError(friendlyError(e)))
+
+    // Only resolve a redirect if this tab actually started one.
+    //
+    // getRedirectResult() is not free: it loads the auth helper iframe from the
+    // authDomain, so calling it unconditionally makes every cold start wait on
+    // the network — and offline, it waits for the full connection timeout while
+    // the app sits on its loading screen. Since signInWithRedirect is only a
+    // fallback for webviews that block popups, the overwhelming majority of
+    // launches have no redirect to resolve.
+    if (hasPendingRedirect()) {
+      getRedirectResult(auth)
+        .catch((e) => setError(friendlyError(e)))
+        .finally(() => {
+          try {
+            sessionStorage.removeItem(REDIRECT_FLAG)
+          } catch {
+            // Storage blocked; the flag simply expires with the session.
+          }
+        })
+    }
 
     return onAuthStateChanged(
       auth,
@@ -73,6 +105,12 @@ export function AuthProvider({ children }) {
           await signInWithPopup(auth, googleProvider)
         } catch (e) {
           if (POPUP_UNAVAILABLE.has(e.code)) {
+            try {
+              sessionStorage.setItem(REDIRECT_FLAG, '1')
+            } catch {
+              // Storage blocked — getRedirectResult is skipped next load, so
+              // fall back to calling it unconditionally in that case.
+            }
             await signInWithRedirect(auth, googleProvider)
             return
           }
