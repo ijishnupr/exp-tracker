@@ -12,12 +12,20 @@
       // ?theme=light|dark forces a mode, so both palettes can be screenshotted.
       const t = new URLSearchParams(location.search).get('theme')
       if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
-      // ?static=1 kills the intro animations. Headless Chrome's animation clock
-      // does not advance under --virtual-time-budget, so every element that
-      // animates in from opacity 0 screenshots as blank without this.
+      // ?static=1 makes the settled UI screenshottable: headless Chrome's
+      // animation clock does not advance under --virtual-time-budget, so
+      // anything that animates in from opacity 0 otherwise captures as blank.
+      // The page transition's transform is then put back by hand, because it is
+      // load-bearing while the transition runs: a transformed ancestor is the
+      // containing block for its `position: fixed` descendants, so a modal
+      // nested under one is positioned against the page rather than the
+      // viewport. Keeping it here means a screenshot proves the modal survives
+      // that, instead of quietly testing an easier page than the real one.
       if (new URLSearchParams(location.search).get('static') === '1') {
         const s = document.createElement('style')
-        s.textContent = '*,*::before,*::after{animation:none!important;transition:none!important}'
+        s.textContent =
+          '*,*::before,*::after{animation:none!important;transition:none!important}' +
+          '.page-in-right,.page-in-left{transform:translate3d(0,0,0)}'
         document.head.appendChild(s)
       }
       // ?click=<button text> clicks that button once mounted, so interactive
