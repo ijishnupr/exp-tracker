@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { categoriesOfType, slotColor } from '../lib/categories'
+import SelectMenu from './SelectMenu'
 import { currencySymbol, formatMoney, parseAmount } from '../lib/money'
 
 const today = () => format(new Date(), 'yyyy-MM-dd')
@@ -112,34 +113,28 @@ export default function EntryForm({
         </div>
       </div>
 
-      <fieldset>
-        <legend className="block text-xs font-medium uppercase tracking-wide text-muted">
+      <div>
+        <span
+          id="category-label"
+          className="block text-xs font-medium uppercase tracking-wide text-muted"
+        >
           Category
-        </legend>
-        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {options.map((c) => {
-            const active = c.key === category
-            return (
-              <button
-                key={c.key}
-                type="button"
-                onClick={() => setCategory(c.key)}
-                aria-pressed={active}
-                className={`flex min-h-[44px] items-center gap-2 rounded-lg border px-2.5 py-2 text-left text-xs transition-colors ${
-                  active
-                    ? 'border-series bg-wash font-semibold text-ink'
-                    : 'border-hairline text-ink-2'
-                }`}
-              >
-                <span
-                  aria-hidden="true"
-                  className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                  style={{ background: slotColor(c.slot) }}
-                />
-                <span className="truncate">{c.label}</span>
-              </button>
-            )
-          })}
+        </span>
+        <div className="mt-1">
+          <SelectMenu
+            id="category"
+            labelledBy="category-label"
+            value={category}
+            onChange={setCategory}
+            options={options.map((c) => ({
+              key: c.key,
+              label: c.label,
+              icon: c.icon,
+              color: slotColor(c.slot),
+            }))}
+            placeholder={categoriesLoaded ? 'No categories' : 'Loading…'}
+            disabled={!options.length}
+          />
         </div>
         {!options.length && (
           <p className="mt-2 text-xs text-muted">
@@ -151,7 +146,7 @@ export default function EntryForm({
               : 'Loading your categories…'}
           </p>
         )}
-      </fieldset>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>

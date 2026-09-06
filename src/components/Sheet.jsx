@@ -1,16 +1,18 @@
 import { useEffect, useRef } from 'react'
-import useVisualViewport from '../lib/useVisualViewport'
+import useKeyboardInset from '../lib/useKeyboardInset'
 
 /** Bottom sheet on phones, centred dialog on wider screens. Escape and a
  *  backdrop tap both close it; body scroll is locked while open.
  *
- *  The sheet is measured against the visual viewport rather than `vh`, so when
- *  a phone keyboard opens the panel shrinks to the space above it instead of
- *  running underneath — which is what used to hide the field being typed into
- *  and the sticky Add button at the bottom of the form. */
+ *  The panel is bottom-anchored to the *visible* area rather than to `100vh`,
+ *  so an open keyboard shrinks it instead of hiding its last rows — the field
+ *  being typed into, and the form's sticky action bar — underneath itself. The
+ *  keyboard's height arrives as a bottom inset that is zero whenever there is
+ *  no keyboard, so dismissing one can only ever restore the full-height sheet.
+ */
 export default function Sheet({ title, onClose, children }) {
   const panelRef = useRef(null)
-  const viewport = useVisualViewport()
+  const keyboardInset = useKeyboardInset()
 
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose()
@@ -25,14 +27,14 @@ export default function Sheet({ title, onClose, children }) {
 
   // The browser scrolls a focused field into view against the pre-resize
   // layout, so once the keyboard has actually taken its space the field can be
-  // behind it. Re-do it ourselves on every viewport change.
+  // behind it. Re-do it ourselves whenever that space changes.
   useEffect(() => {
-    if (!viewport) return
+    if (!keyboardInset) return
     const el = document.activeElement
     if (el && el !== document.body && panelRef.current?.contains(el)) {
       el.scrollIntoView({ block: 'nearest' })
     }
-  }, [viewport])
+  }, [keyboardInset])
 
   return (
     <div className="fixed inset-0 z-50">
@@ -41,12 +43,11 @@ export default function Sheet({ title, onClose, children }) {
         onClick={onClose}
         aria-hidden="true"
       />
-      {/* Sized and offset to the visible area; `100dvh` is the fallback where
-          visualViewport is unavailable. Transparent to pointer events so a tap
-          beside the panel still reaches the backdrop. */}
+      {/* Holds the panel above the keyboard. Transparent to pointer events so a
+          tap beside the panel still reaches the backdrop. */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 flex h-[100dvh] items-end justify-center pt-[max(0.75rem,env(safe-area-inset-top))] sm:items-center"
-        style={viewport ? { top: viewport.top, height: viewport.height } : undefined}
+        className="pointer-events-none absolute inset-0 flex items-end justify-center pt-[max(0.75rem,env(safe-area-inset-top))] sm:items-center"
+        style={keyboardInset ? { bottom: keyboardInset } : undefined}
       >
         <div
           ref={panelRef}

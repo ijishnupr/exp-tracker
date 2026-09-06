@@ -12,13 +12,25 @@
       // ?theme=light|dark forces a mode, so both palettes can be screenshotted.
       const t = new URLSearchParams(location.search).get('theme')
       if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+      // ?static=1 kills the intro animations. Headless Chrome's animation clock
+      // does not advance under --virtual-time-budget, so every element that
+      // animates in from opacity 0 screenshots as blank without this.
+      if (new URLSearchParams(location.search).get('static') === '1') {
+        const s = document.createElement('style')
+        s.textContent = '*,*::before,*::after{animation:none!important;transition:none!important}'
+        document.head.appendChild(s)
+      }
       // ?click=<button text> clicks that button once mounted, so interactive
       // states (confirm dialogs, toggles) can be screenshotted headlessly.
+      // Falls back to a substring match, for buttons whose text includes an
+      // icon or a value.
       const want = new URLSearchParams(location.search).get('click')
       if (want) {
         setTimeout(() => {
-          const b = [...document.querySelectorAll('button')]
-            .find((el) => el.textContent.trim().toLowerCase() === want.toLowerCase())
+          const all = [...document.querySelectorAll('button')]
+          const text = (el) => el.textContent.trim().toLowerCase()
+          const needle = want.toLowerCase()
+          const b = all.find((el) => text(el) === needle) || all.find((el) => text(el).includes(needle))
           if (b) b.click()
         }, 700)
       }
