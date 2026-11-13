@@ -46,8 +46,13 @@ export default defineConfig({
         name: 'Expense Tracker',
         short_name: 'Expenses',
         description: 'Track spending, set budgets, and export to Excel — works offline.',
-        theme_color: '#2a78d6',
-        background_color: '#f9f9f7',
+        // The launch splash is drawn by the OS from these two, before any page
+        // code runs, and the manifest has no dark/light variant, so they
+        // cannot follow the in-app theme. Black matches dark mode exactly and
+        // the status bar with it; once the page paints, index.html and
+        // theme.js take over and follow the theme.
+        theme_color: '#000000',
+        background_color: '#000000',
         display: 'standalone',
         orientation: 'portrait',
         scope: base,

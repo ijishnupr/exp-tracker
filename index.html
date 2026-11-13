@@ -25,6 +25,11 @@
         var t = localStorage.getItem('exp-tracker:theme')
         if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
       } catch (e) {}
+      // Status bar to match from the first frame, not only once the app runs.
+      try {
+        var dark = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+        if (dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#000000')
+      } catch (e) {}
     </script>
     <style>
       html, body { margin: 0; background: #f9f9f7; }
