@@ -5,6 +5,17 @@
 /* Theme tokens. Light is defined on bare :root; dark is redefined twice — once
    for the OS setting, once for an explicit toggle — so the toggle wins in both
    directions and no color has its only definition inside a conditional block. */
+/* Entry-type colours for the add form: green for money in, red for money out.
+   Deeper than the chart series so white button text stays readable (both are
+   above 4.5:1 on white), and the same in both themes. */
+:root {
+  --entry-income: #15803d;
+  --entry-expense: #c62828;
+  /* As text and borders on the page; brighter in dark mode, below. */
+  --entry-income-ink: #15803d;
+  --entry-expense-ink: #c62828;
+}
+
 :root {
   color-scheme: light;
   --surface-1: #fcfcfb;
@@ -54,6 +65,8 @@
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme='light'])) {
     color-scheme: dark;
+    --entry-income-ink: #4ade80;
+    --entry-expense-ink: #f87171;
     --surface-1: #0c0c0c;
     --plane: #000000;
     --text-primary: #ffffff;
@@ -83,6 +96,8 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
+  --entry-income-ink: #4ade80;
+  --entry-expense-ink: #f87171;
   --surface-1: #0c0c0c;
   --plane: #000000;
   --text-primary: #ffffff;
@@ -199,6 +214,18 @@ body {
 .page-in-right { animation: page-in-right 190ms cubic-bezier(0.22, 0.8, 0.36, 1) both; }
 .page-in-left  { animation: page-in-left  190ms cubic-bezier(0.22, 0.8, 0.36, 1) both; }
 .anim-fade-in  { animation: fade-in 160ms ease-out both; }
+
+/* Meter and breakdown bars grow from the left when they first appear. Width,
+   not scaleX, so the rounded ends keep their shape on the way. The `to` frame
+   is left out, so it animates to whatever inline width the bar was given; a
+   later change of value is handled by the bar's own width transition. */
+@keyframes bar-grow {
+  from { width: 0; }
+}
+.anim-bar {
+  animation: bar-grow 700ms cubic-bezier(0.22, 0.8, 0.36, 1) both;
+  transition: width 500ms cubic-bezier(0.22, 0.8, 0.36, 1);
+}
 .anim-sheet    { animation: sheet-up 220ms cubic-bezier(0.22, 0.8, 0.36, 1) both; }
 
 @media (min-width: 640px) {

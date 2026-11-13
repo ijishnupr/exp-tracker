@@ -74,6 +74,7 @@ export default function EntryForm({
           { key: 'income', label: 'Income', sign: '+' },
         ].map((t) => {
           const active = type === t.key
+          const tone = `var(--entry-${t.key}-ink)`
           return (
             <button
               key={t.key}
@@ -81,10 +82,17 @@ export default function EntryForm({
               onClick={() => setType(t.key)}
               aria-pressed={active}
               className={`min-h-[48px] rounded-lg border px-3 text-sm transition-colors ${
-                active
-                  ? 'border-series bg-wash font-semibold text-ink'
-                  : 'border-hairline text-ink-2'
+                active ? 'font-semibold' : 'border-hairline text-ink-2'
               }`}
+              style={
+                active
+                  ? {
+                      borderColor: tone,
+                      color: tone,
+                      background: `color-mix(in srgb, ${tone} 12%, transparent)`,
+                    }
+                  : undefined
+              }
             >
               <span aria-hidden="true" className="mr-1.5">{t.sign}</span>
               {t.label}
@@ -188,7 +196,8 @@ export default function EntryForm({
         <button
           type="submit"
           disabled={saving}
-          className="press flex-1 rounded-lg bg-series px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+          className="press flex-1 rounded-lg px-4 py-3 text-sm font-semibold text-white transition-colors disabled:opacity-60"
+          style={{ background: `var(--entry-${type === 'income' ? 'income' : 'expense'})` }}
         >
           {saving ? 'Saving…' : entry ? 'Save changes' : `Add ${type}`}
         </button>

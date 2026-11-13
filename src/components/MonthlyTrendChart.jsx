@@ -10,6 +10,18 @@ import {
   YAxis,
 } from 'recharts'
 import ChartTooltip from './ChartTooltip'
+
+// Bars rise on load and re-animate to new heights when the month changes.
+// Skipped for anyone who has asked their OS for less motion: Recharts animates
+// in JS, so the CSS reduced-motion rule does not reach it.
+const reduceMotion =
+  typeof window !== 'undefined' &&
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+const ANIM = {
+  isAnimationActive: !reduceMotion,
+  animationDuration: 650,
+  animationEasing: 'ease-out',
+}
 import { formatMoney } from '../lib/money'
 
 /** Income vs expense over time — two series, so it is grouped bars with a
@@ -72,7 +84,7 @@ export default function MonthlyTrendChart({ data, currency, showIncome = true })
               name="Income"
               fill="var(--series-income)"
               radius={[4, 4, 0, 0]}
-              isAnimationActive={false}
+              {...ANIM}
               label={label('income')}
             >
               {data.map((d) => (
@@ -85,7 +97,8 @@ export default function MonthlyTrendChart({ data, currency, showIncome = true })
             name="Expense"
             fill="var(--series-expense)"
             radius={[4, 4, 0, 0]}
-            isAnimationActive={false}
+            {...ANIM}
+            animationBegin={showIncome ? 120 : 0}
             label={label('expense')}
           >
             {data.map((d) => (

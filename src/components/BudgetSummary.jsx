@@ -81,7 +81,7 @@ export default function BudgetSummary({ month, limit, spent, unbudgeted, count, 
               aria-label={`${Math.round(status.ratio * 100)}% of total budget used, ${status.status}`}
             >
               <div
-                className="h-full rounded-full transition-[width]"
+                className="anim-bar h-full rounded-full"
                 style={{ width: `${Math.min(status.ratio * 100, 100)}%`, background: color }}
               />
             </div>

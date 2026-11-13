@@ -10,7 +10,7 @@ const ROLE_COLOR = {
 
 /** A single ratio against a limit is a meter, not a two-slice pie. The status
  *  color is always paired with its icon and label — never color alone. */
-export default function BudgetMeter({ row, currency }) {
+export default function BudgetMeter({ row, currency, index = 0 }) {
   const pct = Math.min(row.ratio * 100, 100)
   const color = ROLE_COLOR[row.role]
 
@@ -39,8 +39,8 @@ export default function BudgetMeter({ row, currency }) {
             aria-label={`${row.label}: ${Math.round(row.ratio * 100)}% of budget used, ${row.status}`}
           >
             <div
-              className="h-full rounded-full transition-[width]"
-              style={{ width: `${pct}%`, background: color }}
+              className="anim-bar h-full rounded-full"
+              style={{ width: `${pct}%`, background: color, animationDelay: `${index * 50}ms` }}
             />
           </div>
           <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-xs">

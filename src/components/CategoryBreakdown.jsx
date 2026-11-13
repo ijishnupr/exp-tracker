@@ -42,7 +42,7 @@ export default function CategoryBreakdown({ title, rows, total, currency, color,
 
       {rows.length > 0 && (
         <ul className="mt-3 space-y-2.5 border-t border-grid pt-3">
-          {rows.map((r) => (
+          {rows.map((r, i) => (
             <li key={r.key}>
               <div className="flex items-baseline justify-between gap-2 text-xs">
                 <span className="flex min-w-0 items-baseline gap-1.5">
@@ -67,8 +67,12 @@ export default function CategoryBreakdown({ title, rows, total, currency, color,
                 style={{ background: 'var(--wash)' }}
               >
                 <div
-                  className="h-full rounded-full"
-                  style={{ width: `${barWidth(r.total, max)}%`, background: color }}
+                  className="anim-bar h-full rounded-full"
+                  style={{
+                    width: `${barWidth(r.total, max)}%`,
+                    background: color,
+                    animationDelay: `${Math.min(i, 10) * 40}ms`,
+                  }}
                 />
               </div>
             </li>

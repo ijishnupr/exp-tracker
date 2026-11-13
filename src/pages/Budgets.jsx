@@ -79,8 +79,8 @@ export default function Budgets() {
         <section className="card px-4 pt-3">
           <SectionHeading title="By category" detail={`${budgeted.length} budgeted`} />
           <div className="divide-y divide-grid">
-            {budgeted.map((r) => (
-              <BudgetMeter key={r.key} row={r} currency={currency} />
+            {budgeted.map((r, i) => (
+              <BudgetMeter key={r.key} row={r} currency={currency} index={i} />
             ))}
           </div>
         </section>
