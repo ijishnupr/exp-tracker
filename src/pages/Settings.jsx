@@ -201,6 +201,11 @@ export default function Settings() {
         Data lives in your own Firebase project under <code>users/{user?.uid?.slice(0, 6)}…</code>{' '}
         and is readable only by you.
       </p>
+      {/* Which build is running. An installed app can stay on an old cached
+          version, so this is the quick way to tell whether an update landed. */}
+      <p className="px-1 text-xs tabular text-muted">
+        Version {__APP_VERSION__} · {__APP_BUILT__}
+      </p>
     </div>
   )
 }

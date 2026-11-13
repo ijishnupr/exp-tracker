@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <!-- Kept in sync with the app's own theme by src/lib/theme.js, so the
-         status bar follows the in-app toggle rather than only the OS. The
-         value here is the pre-JS default; the manifest's theme_color stays
-         blue for the install splash, which cannot be changed at runtime. -->
-    <meta name="theme-color" content="#f9f9f7" />
+    <!-- Black while the launch logo shows, matching the manifest's splash
+         colours, so on Android the status bar is not a light band over the
+         black launch screen. main.jsx hands it to src/lib/theme.js (which
+         follows the in-app theme) as the logo fades. -->
+    <meta name="theme-color" content="#000000" />
     <meta name="description" content="Track spending, set budgets, and export to Excel — works offline." />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -24,11 +24,6 @@
       try {
         var t = localStorage.getItem('exp-tracker:theme')
         if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
-      } catch (e) {}
-      // Status bar to match from the first frame, not only once the app runs.
-      try {
-        var dark = t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
-        if (dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#000000')
       } catch (e) {}
     </script>
     <style>

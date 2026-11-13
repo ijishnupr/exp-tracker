@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process'
 import { copyFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
@@ -21,8 +22,30 @@ const spaFallback = () => ({
   },
 })
 
+/** Short commit of this build, shown in Settings. */
+function buildVersion() {
+  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA.slice(0, 7)
+  try {
+    return execSync('git rev-parse --short HEAD').toString().trim()
+  } catch {
+    return 'dev'
+  }
+}
+const built = new Date().toLocaleString('en-GB', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: 'Asia/Kolkata',
+})
+
 export default defineConfig({
   base,
+  define: {
+    __APP_VERSION__: JSON.stringify(buildVersion()),
+    __APP_BUILT__: JSON.stringify(built),
+  },
   build: {
     rollupOptions: {
       output: {

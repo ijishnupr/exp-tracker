@@ -15,7 +15,11 @@ try {
 } catch {
   // Blocked site data — fall back to the OS preference.
 }
-applyThemeColor()
+// The status bar stays black (index.html) while the black launch logo is up,
+// and takes the theme's colour as the logo fades, below. Painting it light
+// here, while the logo was still showing, was what put a white band over the
+// black launch screen on Android; a PC has no status bar, so it never showed.
+if (!document.getElementById('boot')) applyThemeColor()
 
 // Everything offline lives in browser storage: the Firestore cache and queued
 // writes and the saved sign-in (IndexedDB), plus the app shell (Cache Storage).
@@ -49,6 +53,7 @@ if (boot) {
   requestAnimationFrame(() =>
     setTimeout(() => {
       boot.classList.add('boot-out')
+      applyThemeColor()
       setTimeout(() => boot.remove(), 130)
     }, wait),
   )
