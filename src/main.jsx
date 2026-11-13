@@ -19,6 +19,11 @@ try {
 // and takes the theme's colour as the logo fades, below. Painting it light
 // here, while the logo was still showing, was what put a white band over the
 // black launch screen on Android; a PC has no status bar, so it never showed.
+// Where the system splash stands in for our logo (installed app on Android,
+// see index.html), there is no logo to wait for.
+if (document.documentElement.classList.contains('os-splash')) {
+  document.getElementById('boot')?.remove()
+}
 if (!document.getElementById('boot')) applyThemeColor()
 
 // Everything offline lives in browser storage: the Firestore cache and queued

@@ -25,6 +25,20 @@
         var t = localStorage.getItem('exp-tracker:theme')
         if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
       } catch (e) {}
+      // The installed app on Android opens behind the system's own splash
+      // (the icon on the manifest colour), and no page can line its logo up
+      // with that one exactly across devices, so a second logo after it read
+      // as a flick. There, the system logo is the launch logo: ours is
+      // skipped before it can paint. Browser tabs, desktop and iOS have no
+      // system logo, so they keep the animated one.
+      try {
+        var installed = ['standalone', 'fullscreen', 'minimal-ui'].some(function (m) {
+          return matchMedia('(display-mode: ' + m + ')').matches
+        })
+        if (installed && /Android/i.test(navigator.userAgent)) {
+          document.documentElement.classList.add('os-splash')
+        }
+      } catch (e) {}
     </script>
     <style>
       html, body { margin: 0; background: #f9f9f7; }
@@ -46,6 +60,7 @@
         transition: opacity 120ms ease-out;
       }
       #boot.boot-out { opacity: 0; pointer-events: none; }
+      html.os-splash #boot { display: none; }
       #boot svg { width: 128px; height: 128px; transition: transform 120ms ease-out; }
       #boot.boot-out svg { transform: scale(1.06); }
       #boot .bar {
