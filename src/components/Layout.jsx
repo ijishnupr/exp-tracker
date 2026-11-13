@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
@@ -98,7 +98,12 @@ export default function Layout() {
       */}
       <main ref={swipeRef} className="flex-1 touch-pan-y overflow-x-clip pb-24">
         <div key={location.pathname} className={direction >= 0 ? 'page-in-right' : 'page-in-left'}>
-          <Outlet />
+          {/* Pages other than the Dashboard load on demand. They are usually
+              prefetched already; if not, the page area stays empty for the
+              moment it takes, while the header and tab bar stay put. */}
+          <Suspense fallback={null}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
 

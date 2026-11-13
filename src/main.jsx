@@ -40,17 +40,16 @@ createRoot(document.getElementById('root')).render(
 )
 
 // Fade out the launch logo from index.html once the app has drawn its first
-// frame. It stays at least long enough for the bars to finish rising (about
-// half a second from launch), so it reads as a deliberate mark, not a flicker,
-// but never holds back an app that is ready. Reduced motion: removed at once.
+// frame, and no sooner than the bars' bounce has finished (about 0.29 s from
+// launch), so it never cuts off mid-movement. Reduced motion: removed at once.
 const boot = document.getElementById('boot')
 if (boot) {
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  const wait = reduce ? 0 : Math.max(0, 520 - performance.now())
+  const wait = reduce ? 0 : Math.max(0, 290 - performance.now())
   requestAnimationFrame(() =>
     setTimeout(() => {
       boot.classList.add('boot-out')
-      setTimeout(() => boot.remove(), 220)
+      setTimeout(() => boot.remove(), 130)
     }, wait),
   )
 }

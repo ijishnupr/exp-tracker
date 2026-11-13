@@ -1,7 +1,7 @@
 /* Dev-only visual harness: renders the real pages against seeded data so the
    layout and charts can be checked without a live Firebase project.
    Reached at /preview.html during `npm run dev`; not part of the build. */
-import { StrictMode, useCallback, useMemo, useState } from 'react'
+import { StrictMode, lazy, useCallback, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { startOfMonth, subDays, subMonths } from 'date-fns'
@@ -10,11 +10,12 @@ import { DataContext } from './context/DataContext'
 import { DEFAULT_CATEGORIES } from './lib/categories'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
-import Transactions from './pages/Transactions'
-import Budgets from './pages/Budgets'
-import Settings from './pages/Settings'
-import Reports from './pages/Reports'
-import CategoryDetail from './pages/CategoryDetail'
+// Lazy, as in App.jsx, so the harness exercises the same on-demand loading.
+const Transactions = lazy(() => import('./pages/Transactions'))
+const Budgets = lazy(() => import('./pages/Budgets'))
+const Settings = lazy(() => import('./pages/Settings'))
+const Reports = lazy(() => import('./pages/Reports'))
+const CategoryDetail = lazy(() => import('./pages/CategoryDetail'))
 import Login from './pages/Login'
 import Sheet from './components/Sheet'
 import EntryForm from './components/EntryForm'

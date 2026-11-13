@@ -1,16 +1,35 @@
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useRef } from 'react'
+import { Suspense, lazy, useEffect, useRef } from 'react'
 import { isConfigured } from './lib/firebase'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { DataProvider } from './context/DataContext'
 import { shouldOpenAddOnLaunch } from './lib/prefs'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
-import Transactions from './pages/Transactions'
-import Budgets from './pages/Budgets'
-import Settings from './pages/Settings'
-import Reports from './pages/Reports'
-import CategoryDetail from './pages/CategoryDetail'
+
+// Only the Dashboard, where the app opens, is in the start-up bundle. The
+// other pages load on demand, and are fetched in the background once the
+// app is idle (below), so switching tabs stays instant. Offline they come
+// from the service worker's precache like everything else.
+const loadTransactions = () => import('./pages/Transactions')
+const loadBudgets = () => import('./pages/Budgets')
+const loadSettings = () => import('./pages/Settings')
+const loadReports = () => import('./pages/Reports')
+const loadCategoryDetail = () => import('./pages/CategoryDetail')
+const Transactions = lazy(loadTransactions)
+const Budgets = lazy(loadBudgets)
+const Settings = lazy(loadSettings)
+const Reports = lazy(loadReports)
+const CategoryDetail = lazy(loadCategoryDetail)
+
+function prefetchPages() {
+  const run = () =>
+    [loadTransactions, loadBudgets, loadSettings, loadReports, loadCategoryDetail].forEach((load) =>
+      load().catch(() => {}),
+    )
+  if ('requestIdleCallback' in window) window.requestIdleCallback(run, { timeout: 3000 })
+  else setTimeout(run, 1500)
+}
 import Login from './pages/Login'
 import SetupNeeded from './pages/SetupNeeded'
 import UpdatePrompt from './components/UpdatePrompt'
@@ -76,6 +95,7 @@ function Gate() {
   return (
     <DataProvider>
       <LaunchIntoAdd />
+      <PrefetchPages />
       <Routes>
         {/* A real path for the sheet, so a phone shortcut or the manifest
             shortcut can target it directly. */}
@@ -92,6 +112,12 @@ function Gate() {
       </Routes>
     </DataProvider>
   )
+}
+
+/** Warms the lazy pages once, after the first screen is up. */
+function PrefetchPages() {
+  useEffect(prefetchPages, [])
+  return null
 }
 
 /** Opens the add sheet on a cold start, when the user has asked for that and
