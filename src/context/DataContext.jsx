@@ -85,6 +85,11 @@ export function DataProvider({ children }) {
   const [pendingCount, setPendingCount] = useState(0)
   const [lastSyncedAt, setLastSynced] = useState(getLastSyncedAt)
   const [error, setError] = useState(null)
+  // Bumped by every entry write. Views that read outside the live window
+  // (all-time search, older report ranges) re-read on it; the live snapshot
+  // only covers the last six months, so it cannot tell them a write happened.
+  const [revision, setRevision] = useState(0)
+  const bumpRevision = useCallback(() => setRevision((n) => n + 1), [])
 
   const uid = user?.uid
   const entriesRef = useCallback(() => collection(db, 'users', uid, 'expenses'), [uid])
@@ -217,9 +222,19 @@ export function DataProvider({ children }) {
     [],
   )
 
+  /** Firestore applies a write to the local cache before any later read on
+   *  the same client, so readers can be told straight away. */
+  const afterWrite = useCallback(
+    (promise) => {
+      bumpRevision()
+      return promise
+    },
+    [bumpRevision],
+  )
+
   const addEntry = useCallback(
     ({ amount, type, category, note, date }) =>
-      settleLocally(
+      afterWrite(settleLocally(
         addDoc(entriesRef(), {
         amount: round2(amount),
         type: type === 'income' ? 'income' : 'expense',
@@ -229,13 +244,13 @@ export function DataProvider({ children }) {
           createdAt: serverTimestamp(),
         }),
         reportWriteError,
-      ),
-    [entriesRef, reportWriteError],
+      )),
+    [entriesRef, reportWriteError, afterWrite],
   )
 
   const updateEntry = useCallback(
     (id, { amount, type, category, note, date }) =>
-      settleLocally(
+      afterWrite(settleLocally(
         updateDoc(doc(db, 'users', uid, 'expenses', id), {
         amount: round2(amount),
         type: type === 'income' ? 'income' : 'expense',
@@ -245,13 +260,14 @@ export function DataProvider({ children }) {
           updatedAt: serverTimestamp(),
         }),
         reportWriteError,
-      ),
-    [uid, reportWriteError],
+      )),
+    [uid, reportWriteError, afterWrite],
   )
 
   const deleteEntry = useCallback(
-    (id) => settleLocally(deleteDoc(doc(db, 'users', uid, 'expenses', id)), reportWriteError),
-    [uid, reportWriteError],
+    (id) =>
+      afterWrite(settleLocally(deleteDoc(doc(db, 'users', uid, 'expenses', id)), reportWriteError)),
+    [uid, reportWriteError, afterWrite],
   )
 
   const setBudget = useCallback(
@@ -446,9 +462,10 @@ export function DataProvider({ children }) {
         written += chunk.length
         onProgress?.(written, records.length)
       }
+      bumpRevision()
       return written
     },
-    [uid, categories.length],
+    [uid, categories.length, bumpRevision],
   )
 
   const value = useMemo(
@@ -479,6 +496,7 @@ export function DataProvider({ children }) {
       removeCategory,
       fetchAllEntries,
       fetchEntriesBetween,
+      revision,
       importEntries,
     }),
     [
@@ -507,6 +525,7 @@ export function DataProvider({ children }) {
       removeCategory,
       fetchAllEntries,
       fetchEntriesBetween,
+      revision,
       importEntries,
     ],
   )

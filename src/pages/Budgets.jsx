@@ -39,7 +39,12 @@ export default function Budgets() {
   const limitTotal = sum(budgeted.map((r) => r.limit))
   const budgetedSpent = sum(budgeted.map((r) => r.spent))
   const unbudgetedSpent = sum(unbudgeted.map((r) => r.spent))
-  const txnCount = monthEntries.filter(isExpense).length
+  const monthExpenses = monthEntries.filter(isExpense)
+  const txnCount = monthExpenses.length
+  // Everything spent this month, including categories since archived or
+  // removed, which have no row above. The summary's Spent and transaction
+  // count then describe the same set of entries.
+  const otherSpent = sum(monthExpenses.map((e) => e.amount)) - budgetedSpent
 
   async function save(key) {
     setSaving(key)
@@ -70,10 +75,10 @@ export default function Budgets() {
         month={selectedMonth}
         limit={limitTotal}
         spent={budgetedSpent}
-        unbudgeted={unbudgetedSpent}
+        unbudgeted={otherSpent}
         count={txnCount}
         budgetedCount={sum(budgeted.map((r) => r.count))}
-        over={budgeted.filter((r) => r.spent > r.limit).length}
+        over={budgeted.filter((r) => r.spent >= r.limit).length}
         currency={currency}
       />
 

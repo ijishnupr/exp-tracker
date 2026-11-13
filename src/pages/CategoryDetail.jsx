@@ -29,14 +29,19 @@ const ROLE_COLOR = {
 /** One category up close: this month against its budget and last month, the
  *  six-month trend, and every entry behind the number. */
 export default function CategoryDetail() {
-  const { key: rawKey } = useParams()
-  const key = decodeURIComponent(rawKey ?? '')
+  // useParams already decodes; decoding again threw on a key containing '%'.
+  const { key = '' } = useParams()
   const { selectedMonth, setSelectedMonth, entries, budgets, categories, currency } = useData()
   const [editing, setEditing] = useState(null)
 
   const cat = resolveCategory(categories, key)
   const income = cat.type === 'income'
-  const mine = useMemo(() => entries.filter((e) => e.category === key), [entries, key])
+  // Same type only: an imported refund can sit in an expense category, and
+  // counting it would make "Spent" disagree with the chart and the budget.
+  const mine = useMemo(
+    () => entries.filter((e) => e.category === key && e.type === cat.type),
+    [entries, key, cat.type],
+  )
   const monthRows = useMemo(() => inMonth(mine, selectedMonth), [mine, selectedMonth])
   const prevRows = useMemo(() => inMonth(mine, subMonths(selectedMonth, 1)), [mine, selectedMonth])
   const trend = useMemo(
@@ -78,7 +83,7 @@ export default function CategoryDetail() {
             <span className="tabular text-sm text-muted">of {formatMoney(limit, currency)}</span>
           )}
         </div>
-        {change != null && (
+        {change != null && Math.round(change) !== 0 && (
           <div className="mt-1 text-xs text-ink-2">
             <span aria-hidden="true">{change > 0 ? '▲' : '▼'} </span>
             <span className="tabular">{Math.abs(change).toFixed(0)}%</span>

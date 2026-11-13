@@ -52,7 +52,19 @@ export default function Transactions() {
     PERIOD_MODES.some((m) => m.key === params.get('mode')) ? params.get('mode') : 'month',
   )
   const [typeFilter, setTypeFilter] = useState('all')
-  const [category, setCategory] = useState(() => params.get('category') ?? 'all')
+  const [categoryChoice, setCategory] = useState(() => params.get('category') ?? 'all')
+  const categoryOptions = useMemo(
+    () => categories.filter((c) => typeFilter === 'all' || c.type === typeFilter),
+    [categories, typeFilter],
+  )
+  // A category the type filter hides (Fuel, then "Income"), or one named by a
+  // link that does not exist, must not keep filtering the list invisibly while
+  // the menu reads "All categories". The choice is kept, so switching the type
+  // back restores it.
+  const category =
+    categoryChoice === 'all' || categoryOptions.some((c) => c.key === categoryChoice)
+      ? categoryChoice
+      : 'all'
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState(null)
   const today = iso(new Date())
@@ -195,9 +207,7 @@ export default function Transactions() {
           className="h-12 min-w-0 max-w-[45%] rounded-lg border border-hairline bg-surface px-2 text-sm text-ink outline-none focus:border-series"
         >
           <option value="all">All categories</option>
-          {categories
-            .filter((c) => typeFilter === 'all' || c.type === typeFilter)
-            .map((c) => (
+          {categoryOptions.map((c) => (
               <option key={c.key} value={c.key}>
                 {c.label}
                 {c.archived ? ' (archived)' : ''}

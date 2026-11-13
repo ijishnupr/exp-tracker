@@ -13,10 +13,10 @@ const TABS = [
   { to: '/settings', label: 'Settings', icon: '⚙' },
 ]
 
-const indexOfPath = (pathname) => {
-  const i = TABS.findIndex((t) => (t.to === '/' ? pathname === '/' : pathname.startsWith(t.to)))
-  return i === -1 ? 0 : i
-}
+/** The tab a path belongs to, or -1 for a page reached from inside one
+ *  (Reports, a category): swiping there would jump to an unrelated tab. */
+const indexOfPath = (pathname) =>
+  TABS.findIndex((t) => (t.to === '/' ? pathname === '/' : pathname.startsWith(t.to)))
 
 export default function Layout() {
   const { user } = useAuth()
@@ -32,7 +32,10 @@ export default function Layout() {
 
   useEffect(() => {
     if (index !== prevIndex.current) {
-      setDirection(index > prevIndex.current ? 1 : -1)
+      // A sub-page (-1) is deeper than any tab: it comes in from the right,
+      // and going back out to a tab comes in from the left.
+      const prev = prevIndex.current
+      setDirection(index === -1 ? 1 : prev === -1 ? -1 : index > prev ? 1 : -1)
       prevIndex.current = index
     }
   }, [index])
@@ -47,6 +50,7 @@ export default function Layout() {
   const swipeRef = useSwipeNav({
     onNext: () => go(index + 1),
     onPrev: () => go(index - 1),
+    enabled: index !== -1,
   })
 
   return (

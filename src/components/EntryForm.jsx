@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { format } from 'date-fns'
-import { categoriesOfType, slotColor } from '../lib/categories'
+import { categoriesOfType, resolveCategory, slotColor } from '../lib/categories'
 import SelectMenu from './SelectMenu'
 import { currencySymbol, formatMoney, parseAmount } from '../lib/money'
 
@@ -27,16 +27,26 @@ export default function EntryForm({
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const amountRef = useRef(null)
 
-  const options = useMemo(() => categoriesOfType(categories, type), [categories, type])
+  // The entry's own category stays selectable even when it has been archived
+  // or no longer exists. Without it, the reset below quietly re-filed an old
+  // entry under the first category the moment it was opened for editing.
+  const options = useMemo(() => {
+    const list = categoriesOfType(categories, type)
+    if (!entry || entry.type !== type || list.some((c) => c.key === entry.category)) return list
+    const own = resolveCategory(categories, entry.category)
+    return [...list, { ...own, key: entry.category, label: `${own.label} (archived)` }]
+  }, [categories, type, entry])
   const [category, setCategory] = useState(entry?.category ?? '')
 
   // Switching type replaces the whole category list, so keep the selection
   // valid rather than leaving a stale expense category on an income entry.
+  // Not while categories are still loading: an empty list is not a verdict.
   useEffect(() => {
+    if (!categories.length) return
     if (!options.some((c) => c.key === category)) {
       setCategory(options[0]?.key ?? '')
     }
-  }, [options, category])
+  }, [options, category, categories.length])
 
   useEffect(() => {
     amountRef.current?.focus()

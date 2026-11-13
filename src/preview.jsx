@@ -140,6 +140,7 @@ function Harness() {
     },
     fetchAllEntries,
     fetchEntriesBetween,
+    revision: 0,
     importEntries: async () => 0,
   }
 
