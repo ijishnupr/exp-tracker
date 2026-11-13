@@ -361,6 +361,25 @@ export function DataProvider({ children }) {
     return now
   }, [])
 
+  /** Entries between two dates, inclusive — for a custom range that can reach
+   *  past the live window. A one-off read rather than a second subscription;
+   *  offline it is answered from the local cache. Category is filtered by the
+   *  caller, so this needs no composite index. */
+  const fetchEntriesBetween = useCallback(
+    async (start, end) => {
+      const snap = await getDocs(
+        query(
+          entriesRef(),
+          where('date', '>=', Timestamp.fromDate(start)),
+          where('date', '<=', Timestamp.fromDate(end)),
+          orderBy('date', 'desc'),
+        ),
+      )
+      return snap.docs.map(toEntry)
+    },
+    [entriesRef],
+  )
+
   /** Reads the full history for "export everything" — deliberately a one-off
    *  get rather than widening the live subscription. */
   const fetchAllEntries = useCallback(async () => {
@@ -459,6 +478,7 @@ export function DataProvider({ children }) {
       updateCategory,
       removeCategory,
       fetchAllEntries,
+      fetchEntriesBetween,
       importEntries,
     }),
     [
@@ -486,6 +506,7 @@ export function DataProvider({ children }) {
       updateCategory,
       removeCategory,
       fetchAllEntries,
+      fetchEntriesBetween,
       importEntries,
     ],
   )

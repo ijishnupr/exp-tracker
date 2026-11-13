@@ -1,7 +1,7 @@
 /* Dev-only visual harness: renders the real pages against seeded data so the
    layout and charts can be checked without a live Firebase project.
    Reached at /preview.html during `npm run dev`; not part of the build. */
-import { StrictMode, useMemo, useState } from 'react'
+import { StrictMode, useCallback, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { startOfMonth, subDays, subMonths } from 'date-fns'
@@ -65,6 +65,12 @@ function Harness() {
   )
   const [categories, setCategories] = useState(CATEGORIES)
   const entries = useMemo(seedEntries, [])
+  // Stable, as the real one is: a fresh function each render would re-run the
+  // range effect on every render.
+  const fetchEntriesBetween = useCallback(
+    async (start, end) => entries.filter((e) => e.date >= start && e.date <= end),
+    [entries],
+  )
 
   const auth = {
     user: {
@@ -123,6 +129,7 @@ function Harness() {
       return { archived: false, entries: 0 }
     },
     fetchAllEntries: async () => entries,
+    fetchEntriesBetween,
     importEntries: async () => 0,
   }
 
