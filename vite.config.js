@@ -26,11 +26,13 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        // Firebase and Recharts change far less often than app code, so give
-        // them their own long-cached chunks instead of one 1.3 MB bundle.
+        // Firebase changes far less often than app code, so it gets its own
+        // long-cached chunk. Recharts is deliberately not named here: the
+        // trend chart is lazy-loaded, so Rollup already splits it out, and a
+        // manual chunk would pull it back onto the startup path through the
+        // helpers it shares with the app.
         manualChunks: {
           firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-          charts: ['recharts'],
         },
       },
     },

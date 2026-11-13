@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Suspense, lazy, useMemo, useState } from 'react'
 import { subMonths } from 'date-fns'
 import { WINDOW_MONTHS, useData } from '../context/DataContext'
 import {
@@ -11,12 +11,16 @@ import {
 } from '../lib/analytics'
 import { formatMoney, sum } from '../lib/money'
 import StatTile from '../components/StatTile'
-import MonthlyTrendChart from '../components/MonthlyTrendChart'
 import CategoryBreakdown from '../components/CategoryBreakdown'
 import MonthPicker from '../components/MonthPicker'
 import EntryList from '../components/EntryList'
 import EntrySheet from '../components/EntrySheet'
 import AddButton from '../components/AddButton'
+
+// Recharts is the second-largest chunk in the app and only this chart uses it.
+// Loading it on demand keeps it off the startup path of every other page, and
+// lets the dashboard's numbers paint before the chart code has been parsed.
+const MonthlyTrendChart = lazy(() => import('../components/MonthlyTrendChart'))
 
 export default function Dashboard() {
   const { selectedMonth, setSelectedMonth, entries, budgets, categories, currency, loading } =
@@ -159,7 +163,10 @@ export default function Dashboard() {
           {hasIncome ? 'Income vs spending' : 'Monthly spending'}
         </h2>
         <p className="mb-2 text-xs text-muted">Last {WINDOW_MONTHS} months</p>
-        <MonthlyTrendChart data={trend} currency={currency} showIncome={hasIncome} />
+        {/* Same height as the chart, so nothing shifts when it arrives. */}
+        <Suspense fallback={<div className="h-[210px] w-full" aria-hidden="true" />}>
+          <MonthlyTrendChart data={trend} currency={currency} showIncome={hasIncome} />
+        </Suspense>
         {/* The running totals behind the bars. Two or three numbers side by
             side are a stat row, not a second chart — the bars already carry
             the shape, so repeating them as a pair of columns would say
