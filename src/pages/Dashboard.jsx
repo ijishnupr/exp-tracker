@@ -1,11 +1,13 @@
 import { Suspense, lazy, useMemo, useState } from 'react'
 import { subMonths } from 'date-fns'
+import { Link } from 'react-router-dom'
 import { WINDOW_MONTHS, useData } from '../context/DataContext'
 import {
   budgetAlerts,
   budgetRows,
   categoryTotals,
   inMonth,
+  monthProgress,
   monthlyTotals,
   totals,
 } from '../lib/analytics'
@@ -54,8 +56,8 @@ export default function Dashboard() {
   )
 
   const rows = useMemo(
-    () => budgetRows(monthEntries, budgets, categories),
-    [monthEntries, budgets, categories],
+    () => budgetRows(monthEntries, budgets, categories, monthProgress(selectedMonth)),
+    [monthEntries, budgets, categories, selectedMonth],
   )
   const alerts = useMemo(() => budgetAlerts(rows), [rows])
   const budgetTotal = sum(rows.map((r) => r.limit))
@@ -95,12 +97,24 @@ export default function Dashboard() {
           <ul className="mt-1.5 space-y-0.5 text-xs text-ink-2">
             {alerts.map((a) => (
               <li key={a.key}>
-                <span className="font-medium">{a.label}</span> — {a.status.toLowerCase()},{' '}
-                <span className="tabular">
-                  {a.remaining >= 0
-                    ? `${formatMoney(a.remaining, currency)} left`
-                    : `${formatMoney(-a.remaining, currency)} over`}
-                </span>
+                <Link to={`/category/${encodeURIComponent(a.key)}`} className="underline-offset-2 hover:underline">
+                  <span className="font-medium">{a.label}</span> —{' '}
+                  {a.paceOver > 0 ? (
+                    <>
+                      on pace to go{' '}
+                      <span className="tabular">{formatMoney(a.paceOver, currency)}</span> over by month end
+                    </>
+                  ) : (
+                    <>
+                      {a.status.toLowerCase()},{' '}
+                      <span className="tabular">
+                        {a.remaining >= 0
+                          ? `${formatMoney(a.remaining, currency)} left`
+                          : `${formatMoney(-a.remaining, currency)} over`}
+                      </span>
+                    </>
+                  )}
+                </Link>
               </li>
             ))}
           </ul>
@@ -162,7 +176,12 @@ export default function Dashboard() {
         <h2 className="text-sm font-semibold text-ink">
           {hasIncome ? 'Income vs spending' : 'Monthly spending'}
         </h2>
-        <p className="mb-2 text-xs text-muted">Last {WINDOW_MONTHS} months</p>
+        <div className="mb-2 flex items-baseline justify-between gap-3">
+          <p className="text-xs text-muted">Last {WINDOW_MONTHS} months</p>
+          <Link to="/reports" className="shrink-0 text-xs font-medium text-series">
+            Full report ›
+          </Link>
+        </div>
         {/* Same height as the chart, so nothing shifts when it arrives. */}
         <Suspense fallback={<div className="h-[210px] w-full" aria-hidden="true" />}>
           <MonthlyTrendChart data={trend} currency={currency} showIncome={hasIncome} />

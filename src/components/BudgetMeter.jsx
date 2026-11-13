@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { formatMoney } from '../lib/money'
 
 const ROLE_COLOR = {
@@ -15,11 +16,16 @@ export default function BudgetMeter({ row, currency, index = 0 }) {
   const color = ROLE_COLOR[row.role]
 
   return (
-    <div className="py-3">
+    // The whole row opens the category, so the target is the full width.
+    <Link
+      to={`/category/${encodeURIComponent(row.key)}`}
+      className="-mx-4 block px-4 py-3 transition-colors hover:bg-wash active:bg-wash"
+    >
       <div className="flex items-baseline justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <span aria-hidden="true">{row.icon}</span>
           <span className="truncate text-sm font-medium text-ink">{row.label}</span>
+          <span aria-hidden="true" className="text-muted">›</span>
         </div>
         <div className="shrink-0 tabular text-sm text-ink-2">
           {formatMoney(row.spent, currency)}
@@ -59,10 +65,19 @@ export default function BudgetMeter({ row, currency, index = 0 }) {
                 : `${formatMoney(-row.remaining, currency)} over`}
             </span>
           </div>
+          {row.paceOver > 0 && (
+            <div className="mt-1 flex items-start gap-1 text-xs" style={{ color: 'var(--status-serious)' }}>
+              <span aria-hidden="true">▲</span>
+              <span>
+                At this pace: <span className="tabular font-medium">{formatMoney(row.projected, currency)}</span>{' '}
+                by month end, {formatMoney(row.paceOver, currency)} over
+              </span>
+            </div>
+          )}
         </>
       ) : (
         <div className="mt-1 text-xs text-muted">No budget set</div>
       )}
-    </div>
+    </Link>
   )
 }

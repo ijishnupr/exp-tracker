@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useData } from '../context/DataContext'
-import { budgetRows, inMonth, isExpense } from '../lib/analytics'
+import { budgetRows, inMonth, isExpense, monthProgress } from '../lib/analytics'
 import { currencySymbol, formatMoney, parseAmount, sum } from '../lib/money'
 import BudgetMeter from '../components/BudgetMeter'
 import BudgetSummary from '../components/BudgetSummary'
@@ -22,8 +23,8 @@ export default function Budgets() {
 
   const monthEntries = useMemo(() => inMonth(entries, selectedMonth), [entries, selectedMonth])
   const rows = useMemo(
-    () => budgetRows(monthEntries, budgets, categories),
-    [monthEntries, budgets, categories],
+    () => budgetRows(monthEntries, budgets, categories, monthProgress(selectedMonth)),
+    [monthEntries, budgets, categories, selectedMonth],
   )
   const expenseCategories = useMemo(
     () => categories.filter((c) => c.type === 'expense' && !c.archived),
@@ -71,6 +72,7 @@ export default function Budgets() {
         spent={budgetedSpent}
         unbudgeted={unbudgetedSpent}
         count={txnCount}
+        budgetedCount={sum(budgeted.map((r) => r.count))}
         over={budgeted.filter((r) => r.spent > r.limit).length}
         currency={currency}
       />
@@ -92,9 +94,13 @@ export default function Budgets() {
             title="Spending without a budget"
             detail={formatMoney(unbudgetedSpent, currency)}
           />
-          <ul className="mt-1 space-y-2">
+          <ul className="mt-1 space-y-0.5">
             {unbudgeted.map((r) => (
-              <li key={r.key} className="flex items-baseline justify-between gap-3 text-sm">
+              <li key={r.key}>
+                <Link
+                  to={`/category/${encodeURIComponent(r.key)}`}
+                  className="-mx-2 flex items-baseline justify-between gap-3 rounded-md px-2 py-1 text-sm hover:bg-wash"
+                >
                 <span className="flex min-w-0 items-baseline gap-2">
                   <span aria-hidden="true">{r.icon}</span>
                   <span className="truncate text-ink-2">{r.label}</span>
@@ -103,6 +109,7 @@ export default function Budgets() {
                   </span>
                 </span>
                 <span className="shrink-0 tabular text-ink-2">{formatMoney(r.spent, currency)}</span>
+                </Link>
               </li>
             ))}
           </ul>

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   endOfDay,
-  endOfMonth,
   format,
   isValid,
   parseISO,
@@ -10,14 +10,16 @@ import {
   startOfYear,
   subDays,
 } from 'date-fns'
-import { WINDOW_MONTHS, useData } from '../context/DataContext'
-import { inMonth, monthWindow, ofType, totals } from '../lib/analytics'
+import { useData } from '../context/DataContext'
+import { inMonth, ofType, totals } from '../lib/analytics'
+import { useRangeEntries } from '../lib/useRangeEntries'
 import { resolveCategory } from '../lib/categories'
 import { formatMoney } from '../lib/money'
 import EntryList from '../components/EntryList'
 import MonthPicker from '../components/MonthPicker'
 import EntrySheet from '../components/EntrySheet'
 import AddButton from '../components/AddButton'
+import DateField from '../components/DateField'
 
 const TYPE_FILTERS = [
   { key: 'all', label: 'All' },
@@ -28,6 +30,7 @@ const TYPE_FILTERS = [
 const PERIOD_MODES = [
   { key: 'month', label: 'Month' },
   { key: 'range', label: 'Custom dates' },
+  { key: 'all', label: 'All time' },
 ]
 
 const iso = (d) => format(d, 'yyyy-MM-dd')
@@ -40,45 +43,16 @@ const PRESETS = [
   { key: 'year', label: 'This year', from: (t) => startOfYear(t) },
 ]
 
-/**
- * Entries for a custom range. A range inside the live window is answered from
- * the live entries, so edits show up immediately; one that reaches further back
- * is read once from Firestore, and read again whenever the live entries change
- * so an edit made from this list is reflected too.
- */
-function useRangeEntries(enabled, start, end) {
-  const { entries, selectedMonth, fetchEntriesBetween } = useData()
-  const windowStart = monthWindow(selectedMonth, WINDOW_MONTHS).start
-  const local = enabled && start >= windowStart && end <= endOfMonth(selectedMonth)
-  const [fetched, setFetched] = useState({ rows: [], loading: false, error: null })
-
-  useEffect(() => {
-    if (!enabled || local) return
-    let cancelled = false
-    setFetched((f) => ({ ...f, loading: true, error: null }))
-    fetchEntriesBetween(start, end)
-      .then((rows) => !cancelled && setFetched({ rows, loading: false, error: null }))
-      .catch(
-        (e) =>
-          !cancelled &&
-          setFetched({ rows: [], loading: false, error: e?.message ?? 'Could not load entries.' }),
-      )
-    return () => {
-      cancelled = true
-    }
-    // `entries` is a dependency on purpose: it changes after any write.
-  }, [enabled, local, start, end, entries, fetchEntriesBetween])
-
-  if (!enabled) return { rows: [], loading: false, error: null }
-  if (local) return { rows: entries.filter((e) => e.date >= start && e.date <= end), loading: false, error: null }
-  return fetched
-}
-
 export default function Transactions() {
   const { selectedMonth, setSelectedMonth, entries, categories, currency } = useData()
-  const [mode, setMode] = useState('month')
+  // ?mode= and ?category= seed the view, so the category page can link
+  // straight to "everything in Fuel, all time".
+  const [params] = useSearchParams()
+  const [mode, setMode] = useState(() =>
+    PERIOD_MODES.some((m) => m.key === params.get('mode')) ? params.get('mode') : 'month',
+  )
   const [typeFilter, setTypeFilter] = useState('all')
-  const [category, setCategory] = useState('all')
+  const [category, setCategory] = useState(() => params.get('category') ?? 'all')
   const [search, setSearch] = useState('')
   const [editing, setEditing] = useState(null)
   const today = iso(new Date())
@@ -96,24 +70,41 @@ export default function Transactions() {
     return s <= e ? [startOfDay(s), endOfDay(e)] : [startOfDay(e), endOfDay(s)]
   }, [fromStr, toStr, selectedMonth])
 
-  const range = useRangeEntries(mode === 'range', start, end)
-  const source = mode === 'range' ? range.rows : inMonth(entries, selectedMonth)
+  const range = useRangeEntries({
+    enabled: mode !== 'month',
+    start: mode === 'all' ? null : start,
+    end: mode === 'all' ? null : end,
+  })
+  const monthRows = useMemo(() => inMonth(entries, selectedMonth), [entries, selectedMonth])
+  const source = mode === 'month' ? monthRows : range.rows
 
+  // Search reads the note, the category's name and the amount, so "fuel",
+  // "plumber" and "2500" all find what you would expect.
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase()
+    const qAmount = q.replace(/[,\s₹$€£]/g, '')
+    const labels = new Map(categories.map((c) => [c.key, c.label.toLowerCase()]))
     let rows = source
     if (typeFilter !== 'all') rows = ofType(rows, typeFilter)
-    return rows.filter(
-      (e) => (category === 'all' || e.category === category) && (!q || e.note.toLowerCase().includes(q)),
-    )
-  }, [source, typeFilter, category, search])
+    return rows.filter((e) => {
+      if (category !== 'all' && e.category !== category) return false
+      if (!q) return true
+      return (
+        e.note.toLowerCase().includes(q) ||
+        (labels.get(e.category) ?? e.category).includes(q) ||
+        (qAmount !== '' && /^\d+(\.\d+)?$/.test(qAmount) && String(e.amount).startsWith(qAmount))
+      )
+    })
+  }, [source, typeFilter, category, search, categories])
 
   const t = totals(visible)
   const cat = category === 'all' ? null : resolveCategory(categories, category)
   const periodLabel =
     mode === 'month'
       ? format(selectedMonth, 'MMMM yyyy')
-      : iso(start) === iso(end)
+      : mode === 'all'
+        ? 'All time'
+        : iso(start) === iso(end)
         ? format(start, 'd MMM yyyy')
         : `${format(start, start.getFullYear() === end.getFullYear() ? 'd MMM' : 'd MMM yyyy')} – ${format(end, 'd MMM yyyy')}`
 
@@ -193,8 +184,8 @@ export default function Transactions() {
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search notes"
-          aria-label="Search notes"
+          placeholder={mode === 'all' ? 'Search all entries' : 'Search notes, categories, amounts'}
+          aria-label="Search entries"
           className="h-12 min-w-0 flex-1 rounded-lg border border-hairline bg-surface px-3 text-sm text-ink outline-none placeholder:text-muted focus:border-series"
         />
         <select
@@ -245,6 +236,19 @@ export default function Transactions() {
         )}
       </section>
 
+      {/* A search that finds nothing in one month most likely wants the rest
+          of the history, so offer it rather than leaving a dead end. */}
+      {mode === 'month' && search.trim() && (
+        <button
+          type="button"
+          onClick={() => setMode('all')}
+          className="press w-full rounded-lg border border-hairline bg-surface px-3 py-2.5 text-left text-sm text-ink-2"
+        >
+          <span aria-hidden="true">⌕ </span>
+          Search all months for “<span className="font-medium text-ink">{search.trim()}</span>” ›
+        </button>
+      )}
+
       <div className="card overflow-hidden">
         <EntryList
           entries={visible}
@@ -281,20 +285,5 @@ function Segmented({ label, options, value, onChange }) {
         )
       })}
     </div>
-  )
-}
-
-function DateField({ label, value, max, onChange }) {
-  return (
-    <label className="block min-w-0">
-      <span className="mb-1 block text-xs text-muted">{label}</span>
-      <input
-        type="date"
-        value={value}
-        max={max}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-11 w-full min-w-0 rounded-lg border border-hairline bg-surface px-2 text-sm tabular text-ink outline-none focus:border-series"
-      />
-    </label>
   )
 }

@@ -9,6 +9,8 @@ import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
 import Budgets from './pages/Budgets'
 import Settings from './pages/Settings'
+import Reports from './pages/Reports'
+import CategoryDetail from './pages/CategoryDetail'
 import Login from './pages/Login'
 import SetupNeeded from './pages/SetupNeeded'
 import UpdatePrompt from './components/UpdatePrompt'
@@ -83,6 +85,8 @@ function Gate() {
           <Route path="transactions" element={<Transactions />} />
           <Route path="budgets" element={<Budgets />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="category/:key" element={<CategoryDetail />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

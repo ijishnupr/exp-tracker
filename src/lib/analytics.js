@@ -1,4 +1,12 @@
-import { eachMonthOfInterval, endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
+import {
+  differenceInCalendarDays,
+  eachMonthOfInterval,
+  endOfMonth,
+  format,
+  isSameMonth,
+  startOfMonth,
+  subMonths,
+} from 'date-fns'
 import { resolveCategory, slotColor } from './categories'
 import { round2, sum } from './money'
 
@@ -39,6 +47,12 @@ export function totals(entries) {
 /** Per-month income and expense across the window, oldest first — always one
  *  point per month, including empty ones, so the trend has no gaps. */
 export function monthlyTotals(entries, selected, months = 6) {
+  return monthlyTotalsBetween(entries, subMonths(selected, months - 1), selected, selected)
+}
+
+/** The same, for any span of months. `selected` (optional) is the month the
+ *  chart emphasises; with none, every month is drawn at full strength. */
+export function monthlyTotalsBetween(entries, start, end, selected = null) {
   const buckets = new Map()
   for (const e of entries) {
     const k = monthKey(e.date)
@@ -47,10 +61,7 @@ export function monthlyTotals(entries, selected, months = 6) {
     else b.expense += e.amount
     buckets.set(k, b)
   }
-  return eachMonthOfInterval({
-    start: startOfMonth(subMonths(selected, months - 1)),
-    end: startOfMonth(selected),
-  }).map((d) => {
+  return eachMonthOfInterval({ start: startOfMonth(start), end: startOfMonth(end) }).map((d) => {
     const b = buckets.get(monthKey(d)) ?? { income: 0, expense: 0 }
     return {
       key: monthKey(d),
@@ -59,7 +70,7 @@ export function monthlyTotals(entries, selected, months = 6) {
       income: round2(b.income),
       expense: round2(b.expense),
       net: round2(b.income - b.expense),
-      isSelected: monthKey(d) === monthKey(selected),
+      isSelected: selected != null && monthKey(d) === monthKey(selected),
     }
   })
 }
@@ -101,9 +112,46 @@ export function budgetStatus(spent, limit) {
   return { ratio, role: 'good', statusIcon: '✓', status: 'On track' }
 }
 
+/** Where a month stands in time: its date range, the share of it gone, and
+ *  the days elapsed and left. Today counts as a day still left to spend in.
+ *  Past months are fully elapsed; future ones not started. */
+export function monthProgress(month, today = new Date()) {
+  const start = startOfMonth(month)
+  const end = endOfMonth(month)
+  const days = differenceInCalendarDays(end, start) + 1
+  if (isSameMonth(month, today)) {
+    const daysElapsed = differenceInCalendarDays(today, start) + 1
+    return {
+      start,
+      end,
+      days,
+      current: true,
+      daysElapsed,
+      elapsed: daysElapsed / days,
+      daysLeft: days - daysElapsed + 1,
+    }
+  }
+  const past = today > end
+  return { start, end, days, current: false, daysElapsed: past ? days : 0, elapsed: past ? 1 : 0, daysLeft: 0 }
+}
+
+/** A projection needs some history behind it: in the first few days of a month,
+ *  or from a single payment (rent on the 1st), "at this rate" is noise. */
+export const PACE_MIN_DAYS = 5
+export const PACE_MIN_ENTRIES = 2
+
+/** Month-end spend if the pace so far continues, or null when there is too
+ *  little to project from, or the month is not the current one. */
+export function projectSpend(spent, count, progress) {
+  if (!progress?.current || spent <= 0) return null
+  if (progress.daysElapsed < PACE_MIN_DAYS || count < PACE_MIN_ENTRIES) return null
+  return round2(spent / progress.elapsed)
+}
+
 /** Budget rows for the selected month, worst-off first. Budgets apply to
- *  spending only — income is never "over budget". */
-export function budgetRows(entries, budgets, categories) {
+ *  spending only — income is never "over budget". Pass the month's progress to
+ *  get a pace projection on each row. */
+export function budgetRows(entries, budgets, categories, progress = null) {
   const spentBy = new Map()
   const countBy = new Map()
   for (const e of ofType(entries, 'expense')) {
@@ -115,12 +163,20 @@ export function budgetRows(entries, budgets, categories) {
     .map((cat) => {
       const limit = budgets[cat.key]?.limit ?? 0
       const spent = round2(spentBy.get(cat.key) ?? 0)
+      const count = countBy.get(cat.key) ?? 0
+      const projected = projectSpend(spent, count, progress)
       return {
         ...cat,
         color: slotColor(cat.slot),
         limit,
         spent,
-        count: countBy.get(cat.key) ?? 0,
+        count,
+        projected,
+        // Still under the limit, but heading past it by month end.
+        paceOver:
+          limit > 0 && spent < limit && projected != null && projected > limit
+            ? round2(projected - limit)
+            : 0,
         remaining: round2(limit - spent),
         ...budgetStatus(spent, limit),
       }
@@ -131,4 +187,6 @@ export function budgetRows(entries, budgets, categories) {
 
 /** Categories at or past their warning threshold — drives the alert banner. */
 export const budgetAlerts = (rows) =>
-  rows.filter((r) => r.limit > 0 && ['warning', 'serious', 'critical'].includes(r.role))
+  rows.filter(
+    (r) => r.limit > 0 && (['warning', 'serious', 'critical'].includes(r.role) || r.paceOver > 0),
+  )

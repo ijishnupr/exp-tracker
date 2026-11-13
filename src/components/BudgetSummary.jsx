@@ -1,5 +1,5 @@
-import { differenceInCalendarDays, endOfMonth, format, isSameMonth, startOfMonth } from 'date-fns'
-import { budgetStatus } from '../lib/analytics'
+import { format } from 'date-fns'
+import { budgetStatus, monthProgress, projectSpend } from '../lib/analytics'
 import { formatMoney } from '../lib/money'
 
 const ROLE_COLOR = {
@@ -10,26 +10,22 @@ const ROLE_COLOR = {
   none: 'var(--baseline)',
 }
 
-/** Where the selected month stands in time: its date range, how much of it
- *  has gone, and how many days are left. Past months are fully elapsed. */
-export function monthProgress(month, today = new Date()) {
-  const start = startOfMonth(month)
-  const end = endOfMonth(month)
-  const days = differenceInCalendarDays(end, start) + 1
-  if (isSameMonth(month, today)) {
-    const elapsed = differenceInCalendarDays(today, start) + 1
-    // Today counts as a day still left to spend in.
-    return { start, end, days, current: true, elapsed: elapsed / days, daysLeft: days - elapsed + 1 }
-  }
-  return { start, end, days, current: false, elapsed: today > end ? 1 : 0, daysLeft: 0 }
-}
-
 /** The headline for the month: what is left across every budgeted category,
  *  one meter for the whole, and the period the figures cover. On the current
  *  month a tick marks how far through it we are, so "70% spent" reads as ahead
  *  of or behind pace without any arithmetic. */
-export default function BudgetSummary({ month, limit, spent, unbudgeted, count, over = 0, currency }) {
+export default function BudgetSummary({
+  month,
+  limit,
+  spent,
+  unbudgeted,
+  count,
+  budgetedCount = count,
+  over = 0,
+  currency,
+}) {
   const p = monthProgress(month)
+  const projected = limit > 0 ? projectSpend(spent, budgetedCount, p) : null
   const left = limit - spent
   const status = budgetStatus(spent, limit)
   const color = ROLE_COLOR[status.role]
@@ -109,6 +105,23 @@ export default function BudgetSummary({ month, limit, spent, unbudgeted, count, 
               </span>
             )}
           </div>
+          {/* Only while the month is running and still under the limit: once
+              over, "over budget" already says it. */}
+          {projected != null && left >= 0 && (
+            <p
+              className="mt-2 flex items-start gap-1 text-xs"
+              style={{ color: projected > limit ? 'var(--status-serious)' : 'var(--text-muted)' }}
+            >
+              <span aria-hidden="true">{projected > limit ? '▲' : '→'}</span>
+              <span>
+                At this pace: <span className="tabular font-medium">{formatMoney(projected, currency)}</span> by
+                month end
+                {projected > limit
+                  ? `, ${formatMoney(projected - limit, currency)} over`
+                  : ', within budget'}
+              </span>
+            </p>
+          )}
           {/* The total can be on track while one category is well past its
               limit; say so here rather than leaving it to the list below. */}
           {over > 0 && (
@@ -134,7 +147,7 @@ export default function BudgetSummary({ month, limit, spent, unbudgeted, count, 
         ) : (
           <Stat
             label="Daily avg"
-            value={formatMoney((spent + unbudgeted) / Math.max(p.current ? p.days - p.daysLeft + 1 : p.days, 1), currency, { compact: true })}
+            value={formatMoney((spent + unbudgeted) / Math.max(p.daysElapsed || p.days, 1), currency, { compact: true })}
           />
         )}
       </dl>

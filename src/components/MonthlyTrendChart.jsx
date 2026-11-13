@@ -27,8 +27,16 @@ import { formatMoney } from '../lib/money'
 /** Income vs expense over time — two series, so it is grouped bars with a
  *  legend always present. Only the month in view is direct-labelled; a number
  *  on every bar would be twelve numbers of noise. */
-export default function MonthlyTrendChart({ data, currency, showIncome = true }) {
-  const max = Math.max(...data.flatMap((d) => [d.expense, showIncome ? d.income : 0]), 0)
+export default function MonthlyTrendChart({ data, currency, showIncome = true, showExpense = true }) {
+  const max = Math.max(
+    ...data.flatMap((d) => [showExpense ? d.expense : 0, showIncome ? d.income : 0]),
+    0,
+  )
+  // With a month in view, the others recede and only it is labelled. A report
+  // over a range has no such month, so every bar is drawn at full strength.
+  const anySelected = data.some((d) => d.isSelected)
+  const opacity = (d) => (!anySelected || d.isSelected ? 1 : 0.4)
+  const both = showIncome && showExpense
 
   const label = (key) => ({
     position: 'top',
@@ -37,7 +45,7 @@ export default function MonthlyTrendChart({ data, currency, showIncome = true })
     formatter: (v) => v,
     content: ({ x, y, width, index }) => {
       const row = data[index]
-      if (!row?.isSelected || !row[key]) return null
+      if (!anySelected || !row?.isSelected || !row[key]) return null
       return (
         <text
           x={x + width / 2}
@@ -66,7 +74,7 @@ export default function MonthlyTrendChart({ data, currency, showIncome = true })
           />
           <YAxis hide domain={[0, max ? max * 1.18 : 1]} />
           <Tooltip content={<ChartTooltip currency={currency} />} cursor={{ fill: 'var(--wash)' }} />
-          {showIncome && (
+          {both && (
             <Legend
               verticalAlign="top"
               align="left"
@@ -88,24 +96,26 @@ export default function MonthlyTrendChart({ data, currency, showIncome = true })
               label={label('income')}
             >
               {data.map((d) => (
-                <Cell key={d.key} fillOpacity={d.isSelected ? 1 : 0.4} />
+                <Cell key={d.key} fillOpacity={opacity(d)} />
               ))}
             </Bar>
           )}
+          {showExpense && (
           <Bar
             dataKey="expense"
             name="Expense"
             fill="var(--series-expense)"
             radius={[4, 4, 0, 0]}
             {...ANIM}
-            animationBegin={showIncome ? 120 : 0}
+            animationBegin={both ? 120 : 0}
             label={label('expense')}
           >
             {data.map((d) => (
               /* Emphasis: past months recede, the month in view is solid. */
-              <Cell key={d.key} fillOpacity={d.isSelected ? 1 : 0.4} />
+              <Cell key={d.key} fillOpacity={opacity(d)} />
             ))}
           </Bar>
+          )}
         </BarChart>
       </ResponsiveContainer>
     </div>

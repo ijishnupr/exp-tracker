@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { formatMoney } from '../lib/money'
 
 /** One type's category breakdown, largest first.
@@ -41,9 +42,14 @@ export default function CategoryBreakdown({ title, rows, total, currency, color,
       </p>
 
       {rows.length > 0 && (
-        <ul className="mt-3 space-y-2.5 border-t border-grid pt-3">
+        <ul className="mt-3 space-y-1 border-t border-grid pt-2">
           {rows.map((r, i) => (
             <li key={r.key}>
+              {/* Each row opens that category's drill-down. */}
+              <Link
+                to={`/category/${encodeURIComponent(r.key)}`}
+                className="-mx-2 block rounded-md px-2 py-1 transition-colors hover:bg-wash active:bg-wash"
+              >
               <div className="flex items-baseline justify-between gap-2 text-xs">
                 <span className="flex min-w-0 items-baseline gap-1.5">
                   <span aria-hidden="true" className="shrink-0">
@@ -75,6 +81,7 @@ export default function CategoryBreakdown({ title, rows, total, currency, color,
                   }}
                 />
               </div>
+              </Link>
             </li>
           ))}
         </ul>

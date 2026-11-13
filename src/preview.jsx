@@ -13,6 +13,8 @@ import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
 import Budgets from './pages/Budgets'
 import Settings from './pages/Settings'
+import Reports from './pages/Reports'
+import CategoryDetail from './pages/CategoryDetail'
 import Login from './pages/Login'
 import Sheet from './components/Sheet'
 import EntryForm from './components/EntryForm'
@@ -64,9 +66,20 @@ function Harness() {
     startOfMonth(subMonths(new Date(), -offset)),
   )
   const [categories, setCategories] = useState(CATEGORIES)
+  // Real state, so limits typed on the Budgets page take effect in the preview.
+  const [budgets, setBudgets] = useState({
+    food: { limit: 9000 },
+    transport: { limit: 3000 },
+    groceries: { limit: 12000 },
+    bills: { limit: 5000 },
+    shopping: { limit: 4000 },
+    entertainment: { limit: 2500 },
+    fuel: { limit: 4000 },
+  })
   const entries = useMemo(seedEntries, [])
   // Stable, as the real one is: a fresh function each render would re-run the
   // range effect on every render.
+  const fetchAllEntries = useCallback(async () => entries, [entries])
   const fetchEntriesBetween = useCallback(
     async (start, end) => entries.filter((e) => e.date >= start && e.date <= end),
     [entries],
@@ -91,15 +104,7 @@ function Harness() {
     selectedMonth,
     setSelectedMonth,
     entries,
-    budgets: {
-      food: { limit: 9000 },
-      transport: { limit: 3000 },
-      groceries: { limit: 12000 },
-      bills: { limit: 5000 },
-      shopping: { limit: 4000 },
-      entertainment: { limit: 2500 },
-      fuel: { limit: 4000 },
-    },
+    budgets,
     categories,
     categoriesLoaded: true,
     profile: { currency: 'INR' },
@@ -114,8 +119,13 @@ function Harness() {
     addEntry: async () => {},
     updateEntry: async () => {},
     deleteEntry: async () => {},
-    setBudget: async () => {},
-    removeBudget: async () => {},
+    setBudget: async (key, limit) => setBudgets((b) => ({ ...b, [key]: { limit } })),
+    removeBudget: async (key) =>
+      setBudgets((b) => {
+        const next = { ...b }
+        delete next[key]
+        return next
+      }),
     setCurrency: () => {},
     addCategory: async ({ label, icon, type }) =>
       setCategories((cs) => [
@@ -128,7 +138,7 @@ function Harness() {
       setCategories((cs) => cs.filter((c) => c.key !== key))
       return { archived: false, entries: 0 }
     },
-    fetchAllEntries: async () => entries,
+    fetchAllEntries,
     fetchEntriesBetween,
     importEntries: async () => 0,
   }
@@ -159,6 +169,8 @@ function Harness() {
             <Route path="transactions" element={<Transactions />} />
             <Route path="budgets" element={<Budgets />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="category/:key" element={<CategoryDetail />} />
           </Route>
         </Routes>
       </DataContext.Provider>
