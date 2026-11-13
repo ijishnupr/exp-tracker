@@ -14,6 +14,25 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Expense Tracker</title>
+    <!-- Paints the app's own background on the very first frame, before any
+         JavaScript has loaded. On an installed app the launch splash (icon on
+         a coloured screen) stays up until the page first paints, so without
+         this it lingered for as long as the bundles took to parse. The saved
+         theme is applied here too, so a dark-mode user never sees a light
+         flash. main.jsx applies the same setting again once the app runs. -->
+    <script>
+      try {
+        var t = localStorage.getItem('exp-tracker:theme')
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+      } catch (e) {}
+    </script>
+    <style>
+      html, body { margin: 0; background: #f9f9f7; }
+      @media (prefers-color-scheme: dark) {
+        html:not([data-theme='light']), html:not([data-theme='light']) body { background: #000; }
+      }
+      html[data-theme='dark'], html[data-theme='dark'] body { background: #000; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

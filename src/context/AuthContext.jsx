@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import {
+  browserPopupRedirectResolver,
   getRedirectResult,
   onAuthStateChanged,
   signInWithPopup,
@@ -39,9 +40,40 @@ const POPUP_UNAVAILABLE = new Set([
   'auth/cancelled-popup-request',
 ])
 
+/** The last signed-in user's public profile, kept so a returning user's app
+ *  can draw at once instead of waiting on Auth. Online, Auth re-checks the
+ *  saved account with Google before reporting it, a network round trip that
+ *  made the app slower to open online than offline. Only display fields are
+ *  stored; Firestore rules still require the real session for every read. */
+const LAST_USER = 'exp-tracker:last-user'
+
+function readLastUser() {
+  try {
+    const u = JSON.parse(localStorage.getItem(LAST_USER) ?? 'null')
+    return u && typeof u.uid === 'string' ? u : null
+  } catch {
+    return null
+  }
+}
+
+function writeLastUser(u) {
+  try {
+    if (u) {
+      const { uid, displayName, email, photoURL } = u
+      localStorage.setItem(LAST_USER, JSON.stringify({ uid, displayName, email, photoURL }))
+    } else {
+      localStorage.removeItem(LAST_USER)
+    }
+  } catch {
+    // Blocked storage: the app simply waits for Auth, as before.
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(isConfigured)
+  // Starts from the remembered user, so the app shell renders on the first
+  // frame; Auth's answer replaces it moments later, or signs the view out.
+  const [user, setUser] = useState(() => (isConfigured ? readLastUser() : null))
+  const [loading, setLoading] = useState(() => isConfigured && !readLastUser())
   const [error, setError] = useState(null)
   // Firebase Auth resolves its persisted state from IndexedDB. If that is
   // blocked — private windows, storage disabled, some extensions, a locked-down
@@ -67,7 +99,7 @@ export function AuthProvider({ children }) {
     // fallback for webviews that block popups, the overwhelming majority of
     // launches have no redirect to resolve.
     if (hasPendingRedirect()) {
-      getRedirectResult(auth)
+      getRedirectResult(auth, browserPopupRedirectResolver)
         .catch((e) => setError(friendlyError(e)))
         .finally(() => {
           try {
@@ -83,6 +115,7 @@ export function AuthProvider({ children }) {
       (u) => {
         setUser(u)
         setLoading(false)
+        writeLastUser(u)
         if (u) void ensureProfile(u)
       },
       (e) => {
@@ -102,7 +135,7 @@ export function AuthProvider({ children }) {
       signInWithGoogle: async () => {
         setError(null)
         try {
-          await signInWithPopup(auth, googleProvider)
+          await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver)
         } catch (e) {
           if (POPUP_UNAVAILABLE.has(e.code)) {
             try {
@@ -111,14 +144,17 @@ export function AuthProvider({ children }) {
               // Storage blocked — getRedirectResult is skipped next load, so
               // fall back to calling it unconditionally in that case.
             }
-            await signInWithRedirect(auth, googleProvider)
+            await signInWithRedirect(auth, googleProvider, browserPopupRedirectResolver)
             return
           }
           if (e.code === 'auth/popup-closed-by-user') return
           setError(friendlyError(e))
         }
       },
-      logOut: () => signOut(auth),
+      logOut: () => {
+        writeLastUser(null)
+        return signOut(auth)
+      },
     }),
     [user, loading, stalled, error],
   )

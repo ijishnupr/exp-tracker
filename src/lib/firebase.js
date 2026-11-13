@@ -1,5 +1,10 @@
 import { initializeApp } from 'firebase/app'
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'
+import {
+  GoogleAuthProvider,
+  browserLocalPersistence,
+  indexedDBLocalPersistence,
+  initializeAuth,
+} from 'firebase/auth'
 import {
   initializeFirestore,
   persistentLocalCache,
@@ -24,7 +29,17 @@ export const isConfigured = Boolean(config.apiKey && config.projectId)
 // render the setup screen — so the guard has to live here, not just in the UI.
 export const app = isConfigured ? initializeApp(config) : null
 
-export const auth = app ? getAuth(app) : null
+// initializeAuth rather than getAuth, and deliberately without a
+// popupRedirectResolver. getAuth() attaches the browser resolver, and on any
+// mobile browser or Safari that resolver initialises proactively: auth start-up
+// waits while it loads Google's sign-in iframe from the authDomain. Offline
+// that fails at once, so the app opened faster offline than online. The
+// resolver is only needed while signing in, so AuthContext passes it to the
+// sign-in calls instead. Persistence matches getAuth's default order, so
+// existing sessions carry over.
+export const auth = app
+  ? initializeAuth(app, { persistence: [indexedDBLocalPersistence, browserLocalPersistence] })
+  : null
 
 export const googleProvider = app ? withAccountChooser(new GoogleAuthProvider()) : null
 

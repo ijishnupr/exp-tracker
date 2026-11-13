@@ -12,6 +12,7 @@ export default function StatTile({
   tone = 'neutral',
   signed = false,
   compact = false,
+  pending = false,
 }) {
   const change = compare == null ? null : percentChange(amount, compare)
   const up = change != null && change > 0
@@ -36,13 +37,20 @@ export default function StatTile({
         style={{ color }}
         title={formatMoney(amount, currency)}
       >
-        {signed && amount !== 0 ? (amount > 0 ? '+' : '−') : ''}
-        {formatMoney(signed ? Math.abs(amount) : amount, currency, { compact })}
+        {/* Before the first data arrives a ₹0 would read as a real figure. */}
+        {pending ? (
+          <span className="text-muted">—</span>
+        ) : (
+          <>
+            {signed && amount !== 0 ? (amount > 0 ? '+' : '−') : ''}
+            {formatMoney(signed ? Math.abs(amount) : amount, currency, { compact })}
+          </>
+        )}
       </div>
       {/* The delta row wraps rather than running past the card edge: a big
           swing ("4696%") is exactly when it gets long, and nowrap made the
           tile overflow its column on a narrow phone. */}
-      {change != null && (
+      {!pending && change != null && (
         <div className="mt-1 flex flex-wrap items-center gap-x-1 text-xs">
           <span aria-hidden="true" style={{ color: 'var(--text-secondary)' }}>
             {up ? '▲' : '▼'}
@@ -51,7 +59,7 @@ export default function StatTile({
           <span className="text-muted">vs last month</span>
         </div>
       )}
-      {hint && (
+      {!pending && hint && (
         <div
           className="mt-1 text-xs"
           style={{ color: tone === 'critical' ? 'var(--status-critical)' : 'var(--text-muted)' }}

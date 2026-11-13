@@ -61,6 +61,9 @@ export default function Dashboard() {
   )
   const alerts = useMemo(() => budgetAlerts(rows), [rows])
   const budgetTotal = sum(rows.map((r) => r.limit))
+  // Only spending in budgeted categories counts against the budgets, as on
+  // the Budgets page; subtracting all spending made the two pages disagree.
+  const budgetedSpent = sum(rows.filter((r) => r.limit > 0).map((r) => r.spent))
   const recent = monthEntries.slice(0, 5)
 
   // Compact figures: three exact amounts side by side overflow a narrow phone
@@ -124,6 +127,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {hasIncome && (
           <StatTile
+            pending={loading}
             label="Income"
             amount={t.income}
             currency={currency}
@@ -133,6 +137,7 @@ export default function Dashboard() {
           />
         )}
         <StatTile
+            pending={loading}
           label="Spent"
           amount={t.expense}
           currency={currency}
@@ -142,6 +147,7 @@ export default function Dashboard() {
         {hasIncome ? (
           <div className="col-span-2 sm:col-span-1">
             <StatTile
+            pending={loading}
               label="Net"
               amount={t.net}
               currency={currency}
@@ -153,21 +159,22 @@ export default function Dashboard() {
           </div>
         ) : (
           <StatTile
+            pending={loading}
             label={budgetTotal ? 'Budget left' : 'Daily average'}
             amount={
               budgetTotal
-                ? Math.max(budgetTotal - t.expense, 0)
+                ? Math.max(budgetTotal - budgetedSpent, 0)
                 : t.expense / daysElapsed(selectedMonth)
             }
             currency={currency}
             hint={
               budgetTotal
-                ? t.expense > budgetTotal
-                  ? `${formatMoney(t.expense - budgetTotal, currency)} over budget`
+                ? budgetedSpent > budgetTotal
+                  ? `${formatMoney(budgetedSpent - budgetTotal, currency)} over budget`
                   : `of ${formatMoney(budgetTotal, currency)}`
                 : 'per day so far'
             }
-            tone={budgetTotal && t.expense > budgetTotal ? 'critical' : 'neutral'}
+            tone={budgetTotal && budgetedSpent > budgetTotal ? 'critical' : 'neutral'}
           />
         )}
       </div>
@@ -222,7 +229,7 @@ export default function Dashboard() {
           currency={currency}
           color="var(--series-expense)"
           shareNote="of spending"
-          emptyText="Nothing recorded yet"
+          emptyText={loading ? 'Loading…' : 'Nothing recorded yet'}
         />
 
         {/* Only when there is income this month — an empty card would be a row
