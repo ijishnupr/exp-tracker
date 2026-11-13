@@ -43,12 +43,17 @@ export default function BudgetMeter({ row, currency }) {
               style={{ width: `${pct}%`, background: color }}
             />
           </div>
-          <div className="mt-1.5 flex items-center justify-between text-xs">
+          <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-xs">
             <span className="flex items-center gap-1" style={{ color }}>
               <span aria-hidden="true">{row.statusIcon}</span>
               <span className="font-medium">{row.status}</span>
+              {/* The count sits here rather than beside the name, where it
+                  squeezed long names down to an initial on a narrow phone. */}
+              <span className="tabular text-muted">
+                · {Math.round(row.ratio * 100)}% · {row.count} {row.count === 1 ? 'txn' : 'txns'}
+              </span>
             </span>
-            <span className="tabular text-muted">
+            <span className="ml-auto tabular text-muted">
               {row.remaining >= 0
                 ? `${formatMoney(row.remaining, currency)} left`
                 : `${formatMoney(-row.remaining, currency)} over`}

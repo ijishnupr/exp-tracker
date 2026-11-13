@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useSwipeNav } from '../lib/useSwipeNav'
 import OfflineBanner from './OfflineBanner'
-import UpdatePrompt from './UpdatePrompt'
 import InstallPrompt from './InstallPrompt'
 
 const TABS = [
@@ -88,15 +87,18 @@ export default function Layout() {
       {/*
         pan-y hands vertical scrolling back to the browser, so the swipe hook
         only ever sees horizontal intent. Bottom padding clears the tab bar.
+        overflow-x-clip: the page slides in from 18px to the right, and on a
+        phone that brief overflow widened the layout viewport, stretching the
+        fixed tab bar and leaving the page scrollable sideways. `clip` rather
+        than `hidden`, so no scroll container is created.
       */}
-      <main ref={swipeRef} className="flex-1 touch-pan-y pb-24">
+      <main ref={swipeRef} className="flex-1 touch-pan-y overflow-x-clip pb-24">
         <div key={location.pathname} className={direction >= 0 ? 'page-in-right' : 'page-in-left'}>
           <Outlet />
         </div>
       </main>
 
       <InstallPrompt />
-      <UpdatePrompt />
 
       <nav
         aria-label="Main"

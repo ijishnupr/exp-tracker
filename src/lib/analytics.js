@@ -105,8 +105,10 @@ export function budgetStatus(spent, limit) {
  *  spending only — income is never "over budget". */
 export function budgetRows(entries, budgets, categories) {
   const spentBy = new Map()
+  const countBy = new Map()
   for (const e of ofType(entries, 'expense')) {
     spentBy.set(e.category, (spentBy.get(e.category) ?? 0) + e.amount)
+    countBy.set(e.category, (countBy.get(e.category) ?? 0) + 1)
   }
   return categories
     .filter((c) => c.type === 'expense' && !c.archived)
@@ -118,12 +120,13 @@ export function budgetRows(entries, budgets, categories) {
         color: slotColor(cat.slot),
         limit,
         spent,
+        count: countBy.get(cat.key) ?? 0,
         remaining: round2(limit - spent),
         ...budgetStatus(spent, limit),
       }
     })
     .filter((r) => r.limit > 0 || r.spent > 0)
-    .sort((a, b) => b.ratio - a.ratio || b.spent - a.spent)
+    .sort((a, b) => (b.limit > 0) - (a.limit > 0) || b.ratio - a.ratio || b.spent - a.spent)
 }
 
 /** Categories at or past their warning threshold — drives the alert banner. */
