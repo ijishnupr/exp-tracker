@@ -11,15 +11,21 @@ import Budgets from './pages/Budgets'
 import Settings from './pages/Settings'
 import Login from './pages/Login'
 import SetupNeeded from './pages/SetupNeeded'
+import UpdatePrompt from './components/UpdatePrompt'
 
 export default function App() {
   // A blank .env can only produce a login screen that fails, so say what is
   // missing instead.
   if (!isConfigured) return <SetupNeeded />
 
+  // UpdatePrompt is what registers the service worker, so it is mounted here
+  // rather than inside the signed-in layout. Down there the app shell was only
+  // cached once a launch got all the way past auth to the dashboard — a launch
+  // that stopped at the login or loading screen left nothing to open offline.
   return (
     <AuthProvider>
       <Gate />
+      <UpdatePrompt />
     </AuthProvider>
   )
 }

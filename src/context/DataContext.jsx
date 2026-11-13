@@ -72,6 +72,11 @@ export function DataProvider({ children }) {
   const [budgets, setBudgets] = useState({})
   const [categories, setCategories] = useState([])
   const [categoriesLoaded, setCategoriesLoaded] = useState(false)
+  // True once the server (not just the local cache) has answered. An offline
+  // launch with an empty or cleared cache also reports zero categories, and
+  // seeding then would queue writes that overwrite the user's own categories
+  // as soon as the device reconnects.
+  const [categoriesConfirmed, setCategoriesConfirmed] = useState(false)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [pendingWrites, setPendingWrites] = useState(false)
@@ -152,11 +157,14 @@ export function DataProvider({ children }) {
     if (!uid) {
       setCategories([])
       setCategoriesLoaded(false)
+      setCategoriesConfirmed(false)
       return
     }
     return onSnapshot(
       collection(db, 'users', uid, 'categories'),
+      { includeMetadataChanges: true },
       (snap) => {
+        if (!snap.metadata.fromCache) setCategoriesConfirmed(true)
         setCategories(
           snap.docs
             .map(toCategory)
@@ -182,7 +190,7 @@ export function DataProvider({ children }) {
 
   // Seed the defaults exactly once, when the collection is confirmed empty.
   useEffect(() => {
-    if (!uid || !categoriesLoaded || categories.length) return
+    if (!uid || !categoriesConfirmed || categories.length) return
     void (async () => {
       try {
         const batch = writeBatch(db)
@@ -200,7 +208,7 @@ export function DataProvider({ children }) {
         // Offline on first run: seeded on the next launch with a connection.
       }
     })()
-  }, [uid, categoriesLoaded, categories.length])
+  }, [uid, categoriesConfirmed, categories.length])
 
   const currency = profile?.currency ?? 'INR'
 

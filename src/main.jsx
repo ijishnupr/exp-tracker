@@ -16,6 +16,15 @@ try {
   // Blocked site data — fall back to the OS preference.
 }
 applyThemeColor()
+
+// Everything offline lives in browser storage: the Firestore cache and queued
+// writes and the saved sign-in (IndexedDB), plus the app shell (Cache Storage).
+// That storage is "best effort" by default, so the browser may clear it under
+// storage pressure, or after a week without use. When that happens the app
+// cannot start offline. Asking for persistent storage stops the clearing. Chrome
+// grants it without a prompt to installed or frequently used sites; where it
+// is refused, nothing changes.
+navigator.storage?.persist?.().catch(() => {})
 watchSystemTheme()
 
 // Vite injects the build's `base`; strip the trailing slash React Router
